@@ -3,7 +3,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:md/md.dart';
+import 'package:flutter_md/flutter_md.dart';
 
 void main() => runZonedGuarded<void>(
       () => runApp(const App()),

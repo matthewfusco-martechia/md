@@ -1,8 +1,8 @@
 // ignore_for_file: avoid_print
 
 import 'package:benchmark_harness/benchmark_harness.dart';
+import 'package:flutter_md/src/markdown.dart' show Markdown;
 import 'package:markdown/markdown.dart' as markdown;
-import 'package:md/src/markdown.dart' show Markdown;
 
 /// This benchmark compares the performance of the `md` package against the
 /// `markdown` package from Google.

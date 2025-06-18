@@ -2,7 +2,7 @@
 # PROJECT METADATA
 # ==============================================================================
 
-name: md
+name: flutter_md
 
 description: >
   Markdown library written in Dart.

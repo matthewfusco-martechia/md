@@ -1,5 +1,5 @@
+import 'package:flutter_md/flutter_md.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:md/md.dart';
 
 void main() => group('Parse', () {
       test('Should returns normally', () {

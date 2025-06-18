@@ -2,7 +2,7 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 
-import '../md.dart';
+import '../flutter_md.dart';
 
 /// {@template markdown_theme_data}
 /// Theme data for Markdown widgets.

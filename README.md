@@ -1,7 +1,7 @@
-# md - Markdown Parser and Renderer for Flutter
+# flutter_md - Markdown Parser and Renderer for Flutter
 
 [![Checkout](https://github.com/DoctorinaAI/md/actions/workflows/checkout.yml/badge.svg)](https://github.com/DoctorinaAI/md/actions/workflows/checkout.yml)
-[![Pub Package](https://img.shields.io/pub/v/md.svg)](https://pub.dev/packages/md)
+[![Pub Package](https://img.shields.io/pub/v/md.svg)](https://pub.dev/packages/flutter_md)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Dart](https://img.shields.io/badge/Dart-%230175C2.svg?style=flat&logo=dart&logoColor=white)](https://dart.dev)
 [![Flutter](https://img.shields.io/badge/Flutter-%2302569B.svg?style=flat&logo=Flutter&logoColor=white)](https://flutter.dev)
@@ -284,10 +284,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🔗 Links
 
-- [Documentation](https://pub.dev/documentation/md/latest/)
+- [Documentation](https://pub.dev/documentation/flutter_md/latest/)
 - [Example App](https://github.com/DoctorinaAI/md/tree/main/example)
 - [Issue Tracker](https://github.com/DoctorinaAI/md/issues)
-- [Pub.dev Package](https://pub.dev/packages/md)
+- [Pub.dev Package](https://pub.dev/packages/flutter_md)
 
 ## 💡 Why Choose md?
 
