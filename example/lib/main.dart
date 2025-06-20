@@ -318,5 +318,5 @@ alert(message);
 
 ## Inline code
 
-This example is using `package:md/md.dart`.
+This example is using `package:flutter_md/flutter_md.dart`.
 ''';

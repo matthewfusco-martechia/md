@@ -111,7 +111,7 @@ Add this to your package's `pubspec.yaml` file:
 
 ```yaml
 dependencies:
-  md: ^x.x.x # Replace with the latest version
+  flutter_md: ^x.x.x # Replace with the latest version
 ```
 
 Then run:
@@ -265,7 +265,7 @@ For major changes, please open an issue first to discuss what you would like to 
 ### Development Setup
 
 ```bash
-git clone https://github.com/DoctorinaAI/md.git
+git clone https://github.com/DoctorinaAI/md.git md
 cd md
 flutter pub get
 flutter test
@@ -291,7 +291,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 💡 Why Choose md?
 
-Unlike other Markdown packages that rely on HTML rendering or web views, `md` is built specifically for Flutter using custom render objects. This provides:
+Unlike other Markdown packages that rely on HTML rendering or web views, `flutter_md` is built specifically for Flutter using custom render objects. This provides:
 
 - **Better Performance**: No HTML parsing or web view overhead
 - **Native Feel**: Fully integrated with Flutter's rendering pipeline
