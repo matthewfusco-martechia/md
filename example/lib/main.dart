@@ -275,11 +275,11 @@ Duis aute irure dolor in _reprehenderit in voluptate velit esse_ cillum dolore e
 
 ### Ordered
 
-1. Item 1
-2. Item 2
-3. Item 3
-    1. Item 3a
-    2. Item 3b
+1. Item **1**
+2. Item **2**
+3. Item **3**
+    1. Item **3a** with [link](https://example.com)
+    2. Item **3b**
 
 ---
 

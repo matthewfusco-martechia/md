@@ -1,3 +1,7 @@
+## 0.0.3
+
+- **FIXED**: Links inside lists now work correctly.
+
 ## 0.0.2
 
 - **ADDED**: All field in `MarkdownThemeData()` are now optional.

@@ -846,6 +846,9 @@ class BlockPainter$List with ParagraphGestureHandler implements BlockPainter {
             (span) => TextSpan(
               text: span.text,
               style: theme.textStyleFor(span.style),
+              recognizer: span.style.contains(MD$Style.link)
+                  ? _buildTapRecognizer(span, theme.onLinkTap)
+                  : null,
             ),
           ),
         );
