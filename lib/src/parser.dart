@@ -273,15 +273,42 @@ final Uint8List _kind = Uint8List(2048)
 
 /// Auto-detects plain URLs and converts them to markdown links
 String _autoLinkifyUrls(String input) {
-  // Pattern to match URLs
+  // Pattern to match URLs that are NOT already in markdown format
   final urlPattern = RegExp(
-    r'(?<![\[\(])'  // Negative lookbehind: not preceded by [ or (
-    r'(https?://[^\s\)]+)'  // Match http:// or https:// followed by non-whitespace, non-) chars
-    r'(?![\]\)])',  // Negative lookahead: not followed by ] or )
+    r'(?<!\[)(?<!]\()'  // Negative lookbehind: not preceded by [ or ](
+    r'(https?://[^\s\)\]`]+)'  // Match http:// or https:// followed by non-whitespace, non-), non-], non-` chars
+    r'(?![\]\)])'  // Negative lookahead: not followed by ] or )
+    r'(?!`)',      // Not followed by backtick (avoid URLs in inline code)
     caseSensitive: false,
   );
   
-  return input.replaceAllMapped(urlPattern, (match) {
+  // Split by code blocks to avoid processing URLs inside code
+  final codeBlockPattern = RegExp(r'```[\s\S]*?```|`[^`]*`');
+  final parts = <String>[];
+  int lastEnd = 0;
+  
+  for (final match in codeBlockPattern.allMatches(input)) {
+    // Add text before code block (process URLs)
+    if (match.start > lastEnd) {
+      final textPart = input.substring(lastEnd, match.start);
+      parts.add(_processUrlsInText(textPart, urlPattern));
+    }
+    // Add code block as-is (no URL processing)
+    parts.add(match.group(0)!);
+    lastEnd = match.end;
+  }
+  
+  // Add remaining text after last code block
+  if (lastEnd < input.length) {
+    final textPart = input.substring(lastEnd);
+    parts.add(_processUrlsInText(textPart, urlPattern));
+  }
+  
+  return parts.join();
+}
+
+String _processUrlsInText(String text, RegExp urlPattern) {
+  return text.replaceAllMapped(urlPattern, (match) {
     final url = match.group(1)!;
     // Remove trailing punctuation that's likely not part of the URL
     var cleanUrl = url;

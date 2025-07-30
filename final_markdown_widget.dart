@@ -78,10 +78,6 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
     final thinkContent = _extractThinkContent(widget.data);
     final mainContent = _removeThinkTags(widget.data);
 
-    print('=== DEBUG build: Think content length: ${thinkContent.length}');
-    print('=== DEBUG build: Main content length: ${mainContent.length}');
-    print('=== DEBUG build: Main content preview: ${mainContent.substring(0, math.min(100, mainContent.length))}...');
-
     final widgets = <Widget>[];
 
     // Add think block if present
@@ -91,11 +87,6 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
       while (_thinkBlockStates.isEmpty) {
         _thinkBlockStates.add(false);
       }
-
-      print('=== DEBUG build: Adding think block, isComplete: $isComplete');
-      print('=== DEBUG build: Raw data contains <think>: ${widget.data.contains('<think>')}');
-      print('=== DEBUG build: Raw data contains </think>: ${widget.data.contains('</think>')}');
-      print('=== DEBUG build: Think content extracted: "${thinkContent.substring(0, math.min(100, thinkContent.length))}..."');
 
       widgets.add(md.ThinkBlock(
         content: thinkContent,
@@ -116,13 +107,8 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
 
     // Add main content ONLY if it's not empty
     if (mainContent.trim().isNotEmpty) {
-      print('=== DEBUG build: Adding main content widget');
       widgets.add(_buildMarkdownWithCustomComponents(mainContent));
-    } else {
-      print('=== DEBUG build: Main content is empty, not adding widget');
     }
-
-    print('=== DEBUG build: Total widgets: ${widgets.length}');
 
     return SizedBox(
       width: widget.width,
@@ -143,7 +129,6 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
     
     if (completeMatch != null) {
       final extracted = completeMatch.group(1)?.trim() ?? '';
-      print('=== DEBUG _extractThinkContent: Found complete block, length: ${extracted.length}');
       return extracted;
     }
     
@@ -155,11 +140,9 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
     
     if (incompleteMatch != null) {
       final extracted = incompleteMatch.group(1)?.trim() ?? '';
-      print('=== DEBUG _extractThinkContent: Found incomplete block, length: ${extracted.length}');
       return extracted;
     }
     
-    print('=== DEBUG _extractThinkContent: No think block found');
     return '';
   }
 
@@ -179,37 +162,26 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
         '');
     
     final trimmed = result.trim();
-    print('=== DEBUG _removeThinkTags: Original length: ${content.length}, after removal: ${trimmed.length}');
     return trimmed;
   }
 
   Widget _buildMarkdownWithCustomComponents(String content) {
     try {
-      print('=== DEBUG: Input content length: ${content.length}');
-      print('=== DEBUG: Input content preview: ${content.substring(0, math.min(200, content.length))}...');
       
       // Replace code blocks, tables, and LaTeX with placeholders
       String processedContent = _processContent(content);
       
-      print('=== DEBUG: Processed content length: ${processedContent.length}');
-      print('=== DEBUG: Processed content: $processedContent');
-
       // Find all placeholders
       final codeMatches = RegExp(r'\[CUSTOM_CODE_(\d+)\]').allMatches(processedContent);
       final tableMatches = RegExp(r'\[CUSTOM_TABLE_(\d+)\]').allMatches(processedContent);
       final latexMatches = RegExp(r'\[CUSTOM_LATEX_(\d+)\]').allMatches(processedContent);
 
-      print('=== DEBUG: Found ${codeMatches.length} code blocks, ${tableMatches.length} tables, ${latexMatches.length} latex blocks');
-      print('=== DEBUG: Code blocks stored: ${_codeBlocks.keys.toList()}');
-
       if (codeMatches.isEmpty && tableMatches.isEmpty && latexMatches.isEmpty) {
         // No custom components, use flutter_md for clean rendering with custom inline code
-        print('=== DEBUG: Using flutter_md directly');
         return _buildStyledText(processedContent);
       }
 
       // Build widgets with custom components
-      print('=== DEBUG: Building with custom components');
       return _buildWithCustomPainters(
           processedContent, codeMatches, tableMatches, latexMatches);
     } catch (e, stackTrace) {
@@ -310,21 +282,13 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
   // Main text building method using flutter_md
   Widget _buildStyledText(String content) {
     try {
-      print('=== DEBUG _buildStyledText: Input content: "$content"');
       
       if (content.trim().isEmpty) {
-        print('=== DEBUG _buildStyledText: Content is empty after trim');
         return const SizedBox.shrink();
       }
       
       final markdown = md.Markdown.fromString(content);
-      print('=== DEBUG _buildStyledText: Markdown blocks count: ${markdown.blocks.length}');
       
-      for (int i = 0; i < markdown.blocks.length; i++) {
-        final block = markdown.blocks[i];
-        print('=== DEBUG _buildStyledText: Block $i: ${block.type} - "${block.text.substring(0, math.min(50, block.text.length))}..."');
-      }
-
       return md.MarkdownTheme(
         data: md.MarkdownThemeData(
           textStyle: TextStyle(
@@ -500,35 +464,30 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
     );
 
     // Process incomplete code blocks (only if they don't have a closing ```)
-    processedContent = processedContent.replaceAllMapped(
-      RegExp(r'```([^\n]*)\n?(.*?)$', dotAll: true),
-      (match) {
-        final language = (match.group(1) ?? '').trim();
-        final code = match.group(2) ?? '';
-        final fullContent = match.group(0)!;
-
-        // Skip if it ends with closing fence (this is actually a complete code block)
-        if (code.endsWith('```') || fullContent.contains('\n```')) return fullContent;
-
-        // Skip LaTeX blocks - they're handled separately
-        if (language.toLowerCase() == 'latex') return fullContent;
+    // Only process blocks that are truly incomplete (at the very end with no closing fence)
+    if (processedContent.endsWith('```') == false) {
+      final incompleteMatch = RegExp(r'```([^\n]*)\n?((?:(?!```).)*)$', dotAll: true)
+          .firstMatch(processedContent);
+      
+      if (incompleteMatch != null) {
+        final language = (incompleteMatch.group(1) ?? '').trim();
+        final code = incompleteMatch.group(2) ?? '';
         
-        // Only process if this is truly an incomplete code block at the end of content
-        // Check that there's no closing ``` anywhere in the remaining content
-        final remaining = processedContent.substring(match.start);
-        if (remaining.substring(3).contains('```')) {
-          // There's a closing fence later, so this isn't incomplete
-          return fullContent;
+        // Skip LaTeX blocks - they're handled separately
+        if (language.toLowerCase() != 'latex' && code.trim().isNotEmpty) {
+          _codeBlocks[codeCounter] = {
+            'language': language.isEmpty ? 'text' : language,
+            'code': code.trim(),
+          };
+          
+          processedContent = processedContent.replaceRange(
+            incompleteMatch.start, 
+            incompleteMatch.end, 
+            '[CUSTOM_CODE_${codeCounter++}]'
+          );
         }
-
-        _codeBlocks[codeCounter] = {
-          'language': language.isEmpty ? 'text' : language,
-          'code': code.trim(),
-        };
-
-        return '[CUSTOM_CODE_${codeCounter++}]';
-      },
-    );
+      }
+    }
 
     // Process tables - completely rewritten approach
     // More comprehensive table pattern that captures complete tables
@@ -578,7 +537,6 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
   }
 
   Widget _buildFallbackText(String content) {
-    print('=== DEBUG _buildFallbackText: Using fallback for content: "${content.substring(0, math.min(100, content.length))}..."');
     
     return Container(
       padding: const EdgeInsets.all(8.0),

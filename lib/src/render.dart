@@ -646,6 +646,20 @@ class _CustomLinkWidget extends StatefulWidget {
 class _CustomLinkWidgetState extends State<_CustomLinkWidget> {
   bool _isHovered = false;
 
+  String _extractDomain(String url) {
+    try {
+      final uri = Uri.parse(url);
+      String host = uri.host.toLowerCase();
+      if (host.startsWith('www.')) {
+        host = host.substring(4);
+      }
+      // Return uppercase domain
+      return host.toUpperCase();
+    } catch (_) {
+      return 'LINK';
+    }
+  }
+
   Future<void> _handleTap() async {
     // Call custom onTap if provided
     if (widget.onTap != null) {
@@ -673,40 +687,32 @@ class _CustomLinkWidgetState extends State<_CustomLinkWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final isHovered = _isHovered;
-    final style = widget.linkStyle;
+    final domain = _extractDomain(widget.url);
     
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovered = true),
-      onExit: (_) => setState(() => _isHovered = false),
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: _handleTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          curve: Curves.easeInOut,
-          margin: style.margin,
-          padding: style.padding ?? 
-              const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+    return GestureDetector(
+      onTap: _handleTap,
+      child: MouseRegion(
+        onEnter: (_) => setState(() => _isHovered = true),
+        onExit: (_) => setState(() => _isHovered = false),
+        cursor: SystemMouseCursors.click,
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: isHovered 
-                ? (style.hoverBackgroundColor ?? style.backgroundColor)
-                : style.backgroundColor,
-            borderRadius: style.borderRadius ?? 
-                const BorderRadius.all(Radius.circular(12.0)),
-            border: style.border,
+            color: _isHovered ? const Color(0xFF404040) : const Color(0xFF2A2A2A),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: const Color(0xFF404040), 
+              width: 0.5,
+            ),
           ),
           child: Text(
-            widget.text,
-            style: widget.textStyle.copyWith(
-              color: isHovered 
-                  ? (style.hoverTextColor ?? style.textColor)
-                  : style.textColor,
-              backgroundColor: Colors.transparent, // Container handles background
-              fontWeight: style.fontWeight,
-              fontSize: style.fontSize,
-              fontFamily: style.fontFamily,
-              decoration: style.decoration,
+            domain,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.2,
             ),
           ),
         ),

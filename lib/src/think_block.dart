@@ -115,6 +115,7 @@ class _ThinkBlockState extends State<ThinkBlock> {
                   height: 1.4,
                 ),
               ),
+          const SizedBox(height: 16), // Add bottom spacing
         ],
       ],
     );
