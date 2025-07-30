@@ -6,6 +6,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:meta/meta.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'custom_code_block.dart';
 import 'markdown.dart';
@@ -527,12 +528,14 @@ TextSpan _paragraphFromMarkdownSpans({
             return _buildInlineCodeWidgetSpan(span, theme, style);
           }
           
+          // Handle links with custom styling
+          if (span.style.contains(MD$Style.link)) {
+            return _buildInlineLinkWidgetSpan(span, theme, style);
+          }
+          
           return TextSpan(
             text: span.text,
             style: theme.textStyleFor(span.style).merge(style),
-            recognizer: span.style.contains(MD$Style.link)
-                ? _buildTapRecognizer(span, theme.onLinkTap)
-                : null,
           );
         }
       : (MD$Span span) {
@@ -541,12 +544,14 @@ TextSpan _paragraphFromMarkdownSpans({
             return _buildInlineCodeWidgetSpan(span, theme, null);
           }
           
+          // Handle links with custom styling
+          if (span.style.contains(MD$Style.link)) {
+            return _buildInlineLinkWidgetSpan(span, theme, null);
+          }
+          
           return TextSpan(
             text: span.text,
             style: theme.textStyleFor(span.style),
-            recognizer: span.style.contains(MD$Style.link)
-                ? _buildTapRecognizer(span, theme.onLinkTap)
-                : null,
           );
         };
   return TextSpan(
@@ -589,6 +594,125 @@ WidgetSpan _buildInlineCodeWidgetSpan(
       ),
     ),
   );
+}
+
+/// Helper function to create a [WidgetSpan] for inline links with custom 
+/// styling and URL launching functionality.
+WidgetSpan _buildInlineLinkWidgetSpan(
+  MD$Span span,
+  MarkdownThemeData theme,
+  TextStyle? parentStyle,
+) {
+  final linkStyle = theme.linkStyle ?? LinkStyle.defaultStyle;
+  final textStyle = theme.textStyleFor(span.style);
+  final finalTextStyle = parentStyle != null ? 
+      textStyle.merge(parentStyle) : textStyle;
+  
+  final url = span.extra?['url'] as String?;
+  
+  return WidgetSpan(
+    alignment: PlaceholderAlignment.baseline,
+    baseline: TextBaseline.alphabetic,
+    child: _CustomLinkWidget(
+      text: span.text,
+      url: url ?? '',
+      linkStyle: linkStyle,
+      textStyle: finalTextStyle,
+      onTap: theme.onLinkTap,
+    ),
+  );
+}
+
+/// A custom stateful widget for rendering styled links with hover effects
+class _CustomLinkWidget extends StatefulWidget {
+  const _CustomLinkWidget({
+    required this.text,
+    required this.url,
+    required this.linkStyle,
+    required this.textStyle,
+    this.onTap,
+  });
+
+  final String text;
+  final String url;
+  final LinkStyle linkStyle;
+  final TextStyle textStyle;
+  final void Function(String title, String url)? onTap;
+
+  @override
+  State<_CustomLinkWidget> createState() => _CustomLinkWidgetState();
+}
+
+class _CustomLinkWidgetState extends State<_CustomLinkWidget> {
+  bool _isHovered = false;
+
+  Future<void> _handleTap() async {
+    // Call custom onTap if provided
+    if (widget.onTap != null) {
+      widget.onTap!(widget.text, widget.url);
+      return;
+    }
+    
+    // Default behavior: launch URL
+    if (widget.url.isNotEmpty) {
+      try {
+        final uri = Uri.parse(widget.url);
+        if (await canLaunchUrl(uri)) {
+          await launchUrl(
+            uri,
+            mode: LaunchMode.externalApplication,
+          );
+        } else {
+          debugPrint('Could not launch URL: ${widget.url}');
+        }
+      } catch (e) {
+        debugPrint('Error launching URL: ${widget.url}, error: $e');
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isHovered = _isHovered;
+    final style = widget.linkStyle;
+    
+    return MouseRegion(
+      onEnter: (_) => setState(() => _isHovered = true),
+      onExit: (_) => setState(() => _isHovered = false),
+      cursor: SystemMouseCursors.click,
+      child: GestureDetector(
+        onTap: _handleTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          curve: Curves.easeInOut,
+          margin: style.margin,
+          padding: style.padding ?? 
+              const EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+          decoration: BoxDecoration(
+            color: isHovered 
+                ? (style.hoverBackgroundColor ?? style.backgroundColor)
+                : style.backgroundColor,
+            borderRadius: style.borderRadius ?? 
+                const BorderRadius.all(Radius.circular(12.0)),
+            border: style.border,
+          ),
+          child: Text(
+            widget.text,
+            style: widget.textStyle.copyWith(
+              color: isHovered 
+                  ? (style.hoverTextColor ?? style.textColor)
+                  : style.textColor,
+              backgroundColor: Colors.transparent, // Container handles background
+              fontWeight: style.fontWeight,
+              fontSize: style.fontSize,
+              fontFamily: style.fontFamily,
+              decoration: style.decoration,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// A class for painting blocks in markdown.
@@ -1017,14 +1141,18 @@ class BlockPainter$List with ParagraphGestureHandler implements BlockPainter {
           ),
         )
         ..addAll(
-          filtered.map<TextSpan>(
-            (span) => TextSpan(
-              text: span.text,
-              style: theme.textStyleFor(span.style),
-              recognizer: span.style.contains(MD$Style.link)
-                  ? _buildTapRecognizer(span, theme.onLinkTap)
-                  : null,
-            ),
+          filtered.map<InlineSpan>(
+            (span) {
+              // Handle links with custom styling
+              if (span.style.contains(MD$Style.link)) {
+                return _buildInlineLinkWidgetSpan(span, theme, null);
+              }
+              
+              return TextSpan(
+                text: span.text,
+                style: theme.textStyleFor(span.style),
+              );
+            },
           ),
         );
       if (item.children.isEmpty) continue;

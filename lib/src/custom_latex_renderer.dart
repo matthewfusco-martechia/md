@@ -172,7 +172,7 @@ class CustomLatexRenderer extends StatelessWidget {
     
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.symmetric(vertical: 8),
+      margin: const EdgeInsets.symmetric(vertical: 6),
       decoration: BoxDecoration(
         color: const Color(0xFF0F0F0F),
         borderRadius: BorderRadius.circular(16),
@@ -503,37 +503,40 @@ class CustomLatexRenderer extends StatelessWidget {
       cleanContent = cleanContent.substring(1, cleanContent.length - 1).trim();
     }
     
-    // Clean up any remaining delimiter fragments
+    // Handle problematic alignment and formatting characters that cause parser errors
+    // Replace alignment characters with spaces (common in align environments)
+    cleanContent = cleanContent.replaceAll('&', ' ');
+    
+    // Replace line breaks in equations with spaces
+    cleanContent = cleanContent.replaceAll('\\\\', ' ');
+    
+    // Clean up any remaining delimiter fragments and improve LaTeX formatting
     final delimiterPatterns = [
       '\\\\\\[', '\\\\\\]',    // \[ \]
       '\\\\\\(', '\\\\\\)',    // \( \)
       '\\\$\\\$',              // $$
+      '\\\$',                  // $
       '\\\\displaystyle',      // \displaystyle
-      '\\\\textstyle',         // \textstyle
-      '\\\\scriptstyle',       // \scriptstyle
-      '\\\\scriptscriptstyle', // \scriptscriptstyle
+      '\\\\documentclass\\{.*?\\}',  // \documentclass{...}
+      '\\\\usepackage\\{.*?\\}',     // \usepackage{...}
+      '\\\\begin\\{document\\}',     // \begin{document}
+      '\\\\end\\{document\\}',       // \end{document}
+      '\\\\text\\{',           // \text{ (start)
+      '\\\\mathrm\\{',         // \mathrm{ (start)
+      '\\\\mathbf\\{',         // \mathbf{ (start)
+      '\\\\mathit\\{',         // \mathit{ (start)
     ];
     
     for (final pattern in delimiterPatterns) {
       cleanContent = cleanContent.replaceAll(RegExp(pattern), '');
     }
     
-    // Remove any document-level commands that might interfere
-    final documentCommands = [
-      '\\\\documentclass.*?\\}',
-      '\\\\usepackage.*?\\}',
-      '\\\\begin\\{document\\}',
-      '\\\\end\\{document\\}',
-      '\\\\maketitle',
-      '\\\\title\\{.*?\\}',
-      '\\\\author\\{.*?\\}',
-      '\\\\date\\{.*?\\}',
-    ];
+    // Clean up whitespace and newlines
+    cleanContent = cleanContent
+        .replaceAll(RegExp(r'\n\s*\n'), ' ')  // Multiple newlines to single space
+        .replaceAll(RegExp(r'\s+'), ' ')      // Multiple spaces to single space
+        .trim();
     
-    for (final cmd in documentCommands) {
-      cleanContent = cleanContent.replaceAll(RegExp(cmd, multiLine: true, dotAll: true), '');
-    }
-    
-    return cleanContent.trim();
+    return cleanContent;
   }
 } 

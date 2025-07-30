@@ -93,6 +93,9 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
       }
 
       print('=== DEBUG build: Adding think block, isComplete: $isComplete');
+      print('=== DEBUG build: Raw data contains <think>: ${widget.data.contains('<think>')}');
+      print('=== DEBUG build: Raw data contains </think>: ${widget.data.contains('</think>')}');
+      print('=== DEBUG build: Think content extracted: "${thinkContent.substring(0, math.min(100, thinkContent.length))}..."');
 
       widgets.add(md.ThinkBlock(
         content: thinkContent,
@@ -132,20 +135,52 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
   }
 
   String _extractThinkContent(String content) {
-    final match = RegExp(
+    // First try to extract complete think block
+    final completeMatch = RegExp(
             r'<think(?:\s+complete="(?:true|false)")?\s*>(.*?)</think>',
             dotAll: true)
         .firstMatch(content);
-    return match?.group(1)?.trim() ?? '';
+    
+    if (completeMatch != null) {
+      final extracted = completeMatch.group(1)?.trim() ?? '';
+      print('=== DEBUG _extractThinkContent: Found complete block, length: ${extracted.length}');
+      return extracted;
+    }
+    
+    // If no complete block, try to extract incomplete think block
+    final incompleteMatch = RegExp(
+            r'<think(?:\s+complete="(?:true|false)")?\s*>(.*?)$',
+            dotAll: true)
+        .firstMatch(content);
+    
+    if (incompleteMatch != null) {
+      final extracted = incompleteMatch.group(1)?.trim() ?? '';
+      print('=== DEBUG _extractThinkContent: Found incomplete block, length: ${extracted.length}');
+      return extracted;
+    }
+    
+    print('=== DEBUG _extractThinkContent: No think block found');
+    return '';
   }
 
   String _removeThinkTags(String content) {
-    return content
-        .replaceAll(
-            RegExp(r'<think(?:\s+complete="(?:true|false)")?\s*>.*?</think>',
-                dotAll: true),
-            '')
-        .trim();
+    String result = content;
+    
+    // Remove complete think blocks first
+    result = result.replaceAll(
+        RegExp(r'<think(?:\s+complete="(?:true|false)")?\s*>.*?</think>',
+            dotAll: true),
+        '');
+    
+    // Remove incomplete think blocks (everything from <think> to end of string)
+    result = result.replaceAll(
+        RegExp(r'<think(?:\s+complete="(?:true|false)")?\s*>.*$',
+            dotAll: true),
+        '');
+    
+    final trimmed = result.trim();
+    print('=== DEBUG _removeThinkTags: Original length: ${content.length}, after removal: ${trimmed.length}');
+    return trimmed;
   }
 
   Widget _buildMarkdownWithCustomComponents(String content) {
@@ -354,6 +389,70 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
     String processedContent = content.replaceAll('\\n', '\n');
 
     // Process LaTeX blocks FIRST to protect their content
+    
+    // Process inline LaTeX display math \[...\] 
+    processedContent = processedContent.replaceAllMapped(
+      RegExp(r'\\\[(.*?)\\\]', dotAll: true),
+      (match) {
+        final latexCode = match.group(1)?.trim() ?? '';
+        if (latexCode.isEmpty) return match.group(0)!;
+
+        _latexBlocks[latexCounter] = latexCode;
+        return '[CUSTOM_LATEX_${latexCounter++}]';
+      },
+    );
+
+    // Process inline LaTeX display math $$...$$
+    processedContent = processedContent.replaceAllMapped(
+      RegExp(r'\$\$(.*?)\$\$', dotAll: true),
+      (match) {
+        final latexCode = match.group(1)?.trim() ?? '';
+        if (latexCode.isEmpty) return match.group(0)!;
+
+        _latexBlocks[latexCounter] = latexCode;
+        return '[CUSTOM_LATEX_${latexCounter++}]';
+      },
+    );
+
+    // Process plain bracket math that looks like LaTeX (fallback for common LaTeX patterns)
+    processedContent = processedContent.replaceAllMapped(
+      RegExp(r'^\s*\[\s*\n(.*?)\n\s*\]\s*$', dotAll: true, multiLine: true),
+      (match) {
+        final mathContent = match.group(1)?.trim() ?? '';
+        if (mathContent.isEmpty) return match.group(0)!;
+        
+        // Check if this looks like mathematical content
+        final mathIndicators = [
+          'times', 'cdot', 'div', 'pm', 'mp',
+          'sqrt', 'frac', 'sum', 'int', 'prod',
+          'alpha', 'beta', 'gamma', 'theta', 'pi',
+          'sin', 'cos', 'tan', 'log', 'ln',
+          'boxed', 'text', 'mathbf', 'mathit',
+          '\\\\', '&', '=', '+', '-', '*', '/', '^', '_',
+          r'\d+\s*[+\-*/=]\s*\d+', // Simple arithmetic
+        ];
+        
+        // If content contains math-like patterns, treat it as LaTeX
+        if (mathIndicators.any((indicator) => 
+            mathContent.contains(indicator) || 
+            RegExp(indicator).hasMatch(mathContent))) {
+          
+          // Convert common plain text math to LaTeX symbols
+          String latexContent = mathContent
+              .replaceAll(' times ', r' \times ')
+              .replaceAll('boxed{', r'\boxed{')
+              .replaceAll('sqrt{', r'\sqrt{')
+              .replaceAll('frac{', r'\frac{');
+          
+          _latexBlocks[latexCounter] = latexContent;
+          return '[CUSTOM_LATEX_${latexCounter++}]';
+        }
+        
+        return match.group(0)!; // Return original if not math-like
+      },
+    );
+
+    // Process LaTeX code blocks with ```latex
     processedContent = processedContent.replaceAllMapped(
       RegExp(r'```latex\n?(.*?)\n?```', dotAll: true),
       (match) {

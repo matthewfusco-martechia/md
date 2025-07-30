@@ -106,6 +106,143 @@ class InlineCodeStyle {
       border.hashCode;
 }
 
+/// {@template link_style}
+/// Style configuration for inline links.
+/// Allows full customization of link appearance including
+/// background color, border radius, padding, text color, font size, etc.
+/// {@endtemplate}
+@immutable
+class LinkStyle {
+  /// Creates a [LinkStyle] instance.
+  /// {@macro link_style}
+  const LinkStyle({
+    this.backgroundColor,
+    this.textColor,
+    this.fontSize,
+    this.fontFamily,
+    this.fontWeight,
+    this.borderRadius,
+    this.padding,
+    this.margin,
+    this.border,
+    this.decoration,
+    this.hoverBackgroundColor,
+    this.hoverTextColor,
+  });
+
+  /// Background color of the link.
+  final Color? backgroundColor;
+
+  /// Text color of the link.
+  final Color? textColor;
+
+  /// Font size of the link.
+  final double? fontSize;
+
+  /// Font family of the link.
+  final String? fontFamily;
+
+  /// Font weight of the link.
+  final FontWeight? fontWeight;
+
+  /// Border radius of the link background.
+  final BorderRadius? borderRadius;
+
+  /// Padding around the link text.
+  final EdgeInsetsGeometry? padding;
+
+  /// Margin around the link container.
+  final EdgeInsetsGeometry? margin;
+
+  /// Border around the link container.
+  final Border? border;
+
+  /// Text decoration (underline, etc.)
+  final TextDecoration? decoration;
+
+  /// Background color when hovering (web/desktop)
+  final Color? hoverBackgroundColor;
+
+  /// Text color when hovering (web/desktop)
+  final Color? hoverTextColor;
+
+  /// Creates a copy of this style with the given fields replaced by new values.
+  LinkStyle copyWith({
+    Color? backgroundColor,
+    Color? textColor,
+    double? fontSize,
+    String? fontFamily,
+    FontWeight? fontWeight,
+    BorderRadius? borderRadius,
+    EdgeInsetsGeometry? padding,
+    EdgeInsetsGeometry? margin,
+    Border? border,
+    TextDecoration? decoration,
+    Color? hoverBackgroundColor,
+    Color? hoverTextColor,
+  }) =>
+      LinkStyle(
+        backgroundColor: backgroundColor ?? this.backgroundColor,
+        textColor: textColor ?? this.textColor,
+        fontSize: fontSize ?? this.fontSize,
+        fontFamily: fontFamily ?? this.fontFamily,
+        fontWeight: fontWeight ?? this.fontWeight,
+        borderRadius: borderRadius ?? this.borderRadius,
+        padding: padding ?? this.padding,
+        margin: margin ?? this.margin,
+        border: border ?? this.border,
+        decoration: decoration ?? this.decoration,
+        hoverBackgroundColor: hoverBackgroundColor ?? this.hoverBackgroundColor,
+        hoverTextColor: hoverTextColor ?? this.hoverTextColor,
+      );
+
+  /// Creates a default link style with a styled pill appearance.
+  static const LinkStyle defaultStyle = LinkStyle(
+    backgroundColor: Color(0xFF2A2A2A),      // Dark background
+    textColor: Colors.white,                 // White text
+    fontWeight: FontWeight.w600,             // Semi-bold
+    borderRadius: BorderRadius.all(Radius.circular(12.0)),  // Rounded pill
+    padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+    margin: EdgeInsets.symmetric(horizontal: 2.0),
+    border: Border.fromBorderSide(BorderSide(color: Color(0xFF404040), width: 1.0)),
+    hoverBackgroundColor: Color(0xFF404040), // Lighter on hover
+    hoverTextColor: Colors.white,
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is LinkStyle &&
+          runtimeType == other.runtimeType &&
+          backgroundColor == other.backgroundColor &&
+          textColor == other.textColor &&
+          fontSize == other.fontSize &&
+          fontFamily == other.fontFamily &&
+          fontWeight == other.fontWeight &&
+          borderRadius == other.borderRadius &&
+          padding == other.padding &&
+          margin == other.margin &&
+          border == other.border &&
+          decoration == other.decoration &&
+          hoverBackgroundColor == other.hoverBackgroundColor &&
+          hoverTextColor == other.hoverTextColor;
+
+  @override
+  int get hashCode =>
+      backgroundColor.hashCode ^
+      textColor.hashCode ^
+      fontSize.hashCode ^
+      fontFamily.hashCode ^
+      fontWeight.hashCode ^
+      borderRadius.hashCode ^
+      padding.hashCode ^
+      margin.hashCode ^
+      border.hashCode ^
+      decoration.hashCode ^
+      hoverBackgroundColor.hashCode ^
+      hoverTextColor.hashCode;
+}
+
 /// {@template markdown_theme_data}
 /// Theme data for Markdown widgets.
 /// {@endtemplate}
@@ -124,6 +261,7 @@ class MarkdownThemeData implements ThemeExtension<MarkdownThemeData> {
     this.h6Style,
     this.quoteStyle,
     this.inlineCodeStyle,
+    this.linkStyle,
     this.blockFilter,
     this.spanFilter,
     this.builder,
@@ -167,6 +305,10 @@ class MarkdownThemeData implements ThemeExtension<MarkdownThemeData> {
   /// Style configuration for inline code spans.
   /// Allows full customization of inline code appearance.
   final InlineCodeStyle? inlineCodeStyle;
+
+  /// Style configuration for inline links.
+  /// Allows full customization of link appearance.
+  final LinkStyle? linkStyle;
 
   /// A filter function to determine whether a block should be rendered.
   /// If the function returns `true`, the block will be rendered.
@@ -307,6 +449,7 @@ class MarkdownThemeData implements ThemeExtension<MarkdownThemeData> {
     TextStyle? h6Style,
     TextStyle? quoteStyle,
     InlineCodeStyle? inlineCodeStyle,
+    LinkStyle? linkStyle,
     bool Function(MD$Block block)? blockFilter,
     bool Function(MD$Span span)? spanFilter,
   }) =>
@@ -322,6 +465,7 @@ class MarkdownThemeData implements ThemeExtension<MarkdownThemeData> {
         h6Style: h6Style ?? this.h6Style,
         quoteStyle: quoteStyle ?? this.quoteStyle,
         inlineCodeStyle: inlineCodeStyle ?? this.inlineCodeStyle,
+        linkStyle: linkStyle ?? this.linkStyle,
         blockFilter: blockFilter ?? this.blockFilter,
         spanFilter: spanFilter ?? this.spanFilter,
       );

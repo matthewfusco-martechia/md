@@ -67,34 +67,41 @@ class _ThinkBlockState extends State<ThinkBlock> {
               : null,
           child: Container(
             margin: _isExpanded && widget.isComplete
-                ? const EdgeInsets.only(top: 12, left: 0, right: 0, bottom: 0)
-                : const EdgeInsets.symmetric(vertical: 12),
-            padding: const EdgeInsets.all(16),
+                ? const EdgeInsets.only(top: 4, left: 0, right: 0, bottom: 0)
+                : const EdgeInsets.symmetric(vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: const Color(0xFF141414),
-              border: Border.all(color: const Color(0xFF262626)),
+              color: const Color(0xFF1A1A1A),
+              border: Border.all(color: const Color(0xFF2A2A2A), width: 0.5),
               borderRadius: _isExpanded && widget.isComplete
-                  ? const BorderRadius.vertical(top: Radius.circular(12))
-                  : BorderRadius.circular(12),
+                  ? const BorderRadius.vertical(top: Radius.circular(8))
+                  : BorderRadius.circular(8),
             ),
             child: Row(
               children: [
+                Icon(
+                  Icons.psychology_outlined,
+                  color: thinkTextColor,
+                  size: 16,
+                ),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     widget.isComplete ? "Thought Process" : "Thinking...",
                     style: TextStyle(
                       fontFamily: GoogleFonts.openSans().fontFamily,
-                      fontSize: widget.fontSize,
+                      fontSize: widget.fontSize * 0.85,
                       color: thinkTextColor,
+                      fontWeight: FontWeight.w500,
                     ),
                   ),
                 ),
                 if (!widget.isComplete)
                   const SizedBox(
-                    width: 16,
-                    height: 16,
+                    width: 12,
+                    height: 12,
                     child: CircularProgressIndicator(
-                      strokeWidth: 2,
+                      strokeWidth: 1.5,
                       valueColor: AlwaysStoppedAnimation<Color>(thinkTextColor),
                     ),
                   )
@@ -102,6 +109,7 @@ class _ThinkBlockState extends State<ThinkBlock> {
                   Icon(
                     _isExpanded ? Icons.expand_less : Icons.expand_more,
                     color: thinkTextColor,
+                    size: 16,
                   ),
               ],
             ),
@@ -121,25 +129,25 @@ class _ThinkBlockState extends State<ThinkBlock> {
             behavior: HitTestBehavior.opaque,
             child: Container(
               width: double.infinity,
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
               decoration: BoxDecoration(
-                color: const Color(0xFF141414),
+                color: const Color(0xFF1A1A1A),
                 border: const Border(
-                  left: BorderSide(color: Color(0xFF262626)),
-                  right: BorderSide(color: Color(0xFF262626)),
-                  bottom: BorderSide(color: Color(0xFF262626)),
+                  left: BorderSide(color: Color(0xFF2A2A2A), width: 0.5),
+                  right: BorderSide(color: Color(0xFF2A2A2A), width: 0.5),
+                  bottom: BorderSide(color: Color(0xFF2A2A2A), width: 0.5),
                 ),
                 borderRadius:
-                    const BorderRadius.vertical(bottom: Radius.circular(12)),
+                    const BorderRadius.vertical(bottom: Radius.circular(8)),
               ),
               child: widget.contentWidget ??
                   Text(
                     widget.content,
                     style: TextStyle(
                       fontFamily: GoogleFonts.openSans().fontFamily,
-                      fontSize: widget.fontSize,
+                      fontSize: widget.fontSize * 0.9,
                       color: thinkTextColor,
-                      height: 1.5,
+                      height: 1.4,
                     ),
                   ),
             ),
