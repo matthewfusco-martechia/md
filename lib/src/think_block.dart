@@ -52,6 +52,7 @@ class _ThinkBlockState extends State<ThinkBlock> {
   @override
   Widget build(BuildContext context) {
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         GestureDetector(
           onTap: widget.isComplete
@@ -65,93 +66,56 @@ class _ThinkBlockState extends State<ThinkBlock> {
                   widget.onToggle();
                 }
               : null,
-          child: Container(
-            margin: _isExpanded && widget.isComplete
-                ? const EdgeInsets.only(top: 4, left: 0, right: 0, bottom: 0)
-                : const EdgeInsets.symmetric(vertical: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
-              border: Border.all(color: const Color(0xFF2A2A2A), width: 0.5),
-              borderRadius: _isExpanded && widget.isComplete
-                  ? const BorderRadius.vertical(top: Radius.circular(8))
-                  : BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
+          child: Row(
+            children: [
+              Icon(
+                Icons.psychology_outlined,
+                color: thinkTextColor,
+                size: 16,
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  widget.isComplete ? "Thought Process" : "Thinking...",
+                  style: TextStyle(
+                    fontFamily: GoogleFonts.openSans().fontFamily,
+                    fontSize: widget.fontSize * 0.85,
+                    color: thinkTextColor,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              if (!widget.isComplete)
+                const SizedBox(
+                  width: 12,
+                  height: 12,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 1.5,
+                    valueColor: AlwaysStoppedAnimation<Color>(thinkTextColor),
+                  ),
+                )
+              else
                 Icon(
-                  Icons.psychology_outlined,
+                  _isExpanded ? Icons.expand_less : Icons.expand_more,
                   color: thinkTextColor,
                   size: 16,
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    widget.isComplete ? "Thought Process" : "Thinking...",
-                    style: TextStyle(
-                      fontFamily: GoogleFonts.openSans().fontFamily,
-                      fontSize: widget.fontSize * 0.85,
-                      color: thinkTextColor,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-                if (!widget.isComplete)
-                  const SizedBox(
-                    width: 12,
-                    height: 12,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 1.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(thinkTextColor),
-                    ),
-                  )
-                else
-                  Icon(
-                    _isExpanded ? Icons.expand_less : Icons.expand_more,
-                    color: thinkTextColor,
-                    size: 16,
-                  ),
-              ],
-            ),
+            ],
           ),
         ),
-        if (_isExpanded && widget.isComplete)
-          GestureDetector(
-            onTap: () {
-              // Add haptic feedback
-              HapticFeedback.selectionClick();
-
-              setState(() {
-                _isExpanded = !_isExpanded;
-              });
-              widget.onToggle();
-            },
-            behavior: HitTestBehavior.opaque,
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-              decoration: BoxDecoration(
-                color: const Color(0xFF1A1A1A),
-                border: const Border(
-                  left: BorderSide(color: Color(0xFF2A2A2A), width: 0.5),
-                  right: BorderSide(color: Color(0xFF2A2A2A), width: 0.5),
-                  bottom: BorderSide(color: Color(0xFF2A2A2A), width: 0.5),
+        if (_isExpanded && widget.isComplete) ...[
+          const SizedBox(height: 8),
+          widget.contentWidget ??
+              Text(
+                widget.content,
+                style: TextStyle(
+                  fontFamily: GoogleFonts.openSans().fontFamily,
+                  fontSize: widget.fontSize * 0.9,
+                  color: thinkTextColor,
+                  height: 1.4,
                 ),
-                borderRadius:
-                    const BorderRadius.vertical(bottom: Radius.circular(8)),
               ),
-              child: widget.contentWidget ??
-                  Text(
-                    widget.content,
-                    style: TextStyle(
-                      fontFamily: GoogleFonts.openSans().fontFamily,
-                      fontSize: widget.fontSize * 0.9,
-                      color: thinkTextColor,
-                      height: 1.4,
-                    ),
-                  ),
-            ),
-          ),
+        ],
       ],
     );
   }

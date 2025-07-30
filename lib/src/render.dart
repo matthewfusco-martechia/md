@@ -1134,12 +1134,12 @@ class BlockPainter$List with ParagraphGestureHandler implements BlockPainter {
       
       // Add the bullet point
       children.add(TextSpan(
-        text: '${' ' * item.indent}${switch (item.marker) {
-          '-' => '•',
-          '*' => '•',
-          '+' => '•',
-          _ => item.marker,
-        }} ',
+        text: '${' ' * (item.indent * 2)}${switch (item.marker) {
+          '-' => '• ',
+          '*' => '• ',
+          '+' => '• ',
+          _ => '${item.marker} ',
+        }}',
         style: theme.textStyle,
       ));
       

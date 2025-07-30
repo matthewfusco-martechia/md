@@ -37,6 +37,9 @@ class MarkdownDecoder extends Converter<String, Markdown> {
 
   @override
   Markdown convert(String input) {
+    // Auto-detect plain URLs and convert them to markdown links
+    input = _autoLinkifyUrls(input);
+
     final lines = LineSplitter.split(input).toList(growable: false);
     if (lines.isEmpty) return const Markdown.empty();
     final blocks = Queue<MD$Block>(); // Queue to accumulate blocks
@@ -267,6 +270,36 @@ final Uint8List _kind = Uint8List(2048)
   ..[96] = 1 // ` - monospace (single)
   ..[124] = 1 // | - spoiler (double)
   ..[126] = 1; // ~ - strikethrough (double)
+
+/// Auto-detects plain URLs and converts them to markdown links
+String _autoLinkifyUrls(String input) {
+  // Pattern to match URLs
+  final urlPattern = RegExp(
+    r'(?<![\[\(])'  // Negative lookbehind: not preceded by [ or (
+    r'(https?://[^\s\)]+)'  // Match http:// or https:// followed by non-whitespace, non-) chars
+    r'(?![\]\)])',  // Negative lookahead: not followed by ] or )
+    caseSensitive: false,
+  );
+  
+  return input.replaceAllMapped(urlPattern, (match) {
+    final url = match.group(1)!;
+    // Remove trailing punctuation that's likely not part of the URL
+    var cleanUrl = url;
+    while (cleanUrl.endsWith('.') || cleanUrl.endsWith(',') || cleanUrl.endsWith(';') || cleanUrl.endsWith(')')) {
+      cleanUrl = cleanUrl.substring(0, cleanUrl.length - 1);
+    }
+    
+    // Extract domain name for link text
+    try {
+      final uri = Uri.parse(cleanUrl);
+      final domain = uri.host.startsWith('www.') ? uri.host.substring(4) : uri.host;
+      return '[$domain]($cleanUrl)';
+    } catch (e) {
+      // If URL parsing fails, use the URL itself as the link text
+      return '[$cleanUrl]($cleanUrl)';
+    }
+  });
+}
 
 List<MD$Span> _parseInlineSpans(String text) {
   if (text.isEmpty) return const <MD$Span>[];

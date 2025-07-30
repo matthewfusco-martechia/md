@@ -499,18 +499,27 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
       },
     );
 
-    // Process incomplete code blocks
+    // Process incomplete code blocks (only if they don't have a closing ```)
     processedContent = processedContent.replaceAllMapped(
       RegExp(r'```([^\n]*)\n?(.*?)$', dotAll: true),
       (match) {
         final language = (match.group(1) ?? '').trim();
         final code = match.group(2) ?? '';
+        final fullContent = match.group(0)!;
 
-        // Skip if it ends with closing fence (shouldn't happen but safety check)
-        if (code.endsWith('```')) return match.group(0)!;
+        // Skip if it ends with closing fence (this is actually a complete code block)
+        if (code.endsWith('```') || fullContent.contains('\n```')) return fullContent;
 
         // Skip LaTeX blocks - they're handled separately
-        if (language.toLowerCase() == 'latex') return match.group(0)!;
+        if (language.toLowerCase() == 'latex') return fullContent;
+        
+        // Only process if this is truly an incomplete code block at the end of content
+        // Check that there's no closing ``` anywhere in the remaining content
+        final remaining = processedContent.substring(match.start);
+        if (remaining.substring(3).contains('```')) {
+          // There's a closing fence later, so this isn't incomplete
+          return fullContent;
+        }
 
         _codeBlocks[codeCounter] = {
           'language': language.isEmpty ? 'text' : language,
