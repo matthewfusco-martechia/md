@@ -41,7 +41,6 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
   List<bool> _thinkBlockStates = [];
 
   // Storage for custom components
-  Map<int, Map<String, String>> _codeBlocks = {};
   Map<int, String> _tables = {};
   Map<int, String> _latexBlocks = {}; // LaTeX blocks storage only
 
@@ -70,7 +69,6 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
   @override
   Widget build(BuildContext context) {
     // Clear storage
-    _codeBlocks.clear();
     _tables.clear();
     _latexBlocks.clear();
 
@@ -172,18 +170,17 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
       String processedContent = _processContent(content);
       
       // Find all placeholders
-      final codeMatches = RegExp(r'\[CUSTOM_CODE_(\d+)\]').allMatches(processedContent);
       final tableMatches = RegExp(r'\[CUSTOM_TABLE_(\d+)\]').allMatches(processedContent);
       final latexMatches = RegExp(r'\[CUSTOM_LATEX_(\d+)\]').allMatches(processedContent);
 
-      if (codeMatches.isEmpty && tableMatches.isEmpty && latexMatches.isEmpty) {
-        // No custom components, use flutter_md for clean rendering with custom inline code
+      if (tableMatches.isEmpty && latexMatches.isEmpty) {
+        // No custom components, use flutter_md for clean rendering
         return _buildStyledText(processedContent);
       }
 
       // Build widgets with custom components
       return _buildWithCustomPainters(
-          processedContent, codeMatches, tableMatches, latexMatches);
+          processedContent, tableMatches, latexMatches);
     } catch (e, stackTrace) {
       print('Markdown rendering error: $e');
       print('Stack trace: $stackTrace');
@@ -194,17 +191,12 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
   // Build markdown with custom components (code blocks, tables, LaTeX)
   Widget _buildWithCustomPainters(
       String processedContent,
-      Iterable<RegExpMatch> codeMatches,
       Iterable<RegExpMatch> tableMatches,
       Iterable<RegExpMatch> latexMatches) {
     final widgets = <Widget>[];
     final allMatches = <_Match>[];
 
     // Collect all matches (code blocks, tables, LaTeX)
-    for (final match in codeMatches) {
-      allMatches.add(
-          _Match(match.start, match.end, 'code', int.parse(match.group(1)!)));
-    }
     for (final match in tableMatches) {
       allMatches.add(
           _Match(match.start, match.end, 'table', int.parse(match.group(1)!)));
@@ -229,16 +221,7 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
       }
 
       // Add custom component using flutter_md built-in components
-      if (match.type == 'code') {
-        final codeData = _codeBlocks[match.index];
-        if (codeData != null) {
-          widgets.add(md.CustomCodeBlock(
-            language: codeData['language']!,
-            code: codeData['code']!,
-            fontSize: widget.fontSize,
-          ));
-        }
-      } else if (match.type == 'table') {
+      if (match.type == 'table') {
         final tableData = _tables[match.index];
         if (tableData != null) {
           widgets.add(md.CustomTable(
@@ -332,8 +315,7 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
             fontWeight: FontWeight.w500,
             height: 1.3,
           ),
-          // Filter out code blocks from flutter_md to use our custom ones
-          blockFilter: (block) => block.type != 'code',
+          // Custom inline code is handled in flutter_md
         ),
         child: md.MarkdownWidget(markdown: markdown),
       );
@@ -345,7 +327,6 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
   }
 
   String _processContent(String content) {
-    int codeCounter = 0;
     int tableCounter = 0;
     int latexCounter = 0; // LaTeX counter only
 
@@ -442,52 +423,7 @@ class _MarkdownWidgetState extends State<MarkdownWidget> {
       },
     );
 
-    // Process complete code blocks SECOND to protect their content
-    processedContent = processedContent.replaceAllMapped(
-      RegExp(r'```([^\n]*)\n?(.*?)\n?```', dotAll: true),
-      (match) {
-        final language = (match.group(1) ?? '').trim();
-        final code = match.group(2) ?? '';
-
-        if (code.trim().isEmpty) return match.group(0)!;
-
-        // Skip LaTeX blocks - they're handled separately
-        if (language.toLowerCase() == 'latex') return match.group(0)!;
-
-        _codeBlocks[codeCounter] = {
-          'language': language.isEmpty ? 'text' : language,
-          'code': code.trim(),
-        };
-
-        return '[CUSTOM_CODE_${codeCounter++}]';
-      },
-    );
-
-    // Process incomplete code blocks (only if they don't have a closing ```)
-    // Only process blocks that are truly incomplete (at the very end with no closing fence)
-    if (processedContent.endsWith('```') == false) {
-      final incompleteMatch = RegExp(r'```([^\n]*)\n?((?:(?!```).)*)$', dotAll: true)
-          .firstMatch(processedContent);
-      
-      if (incompleteMatch != null) {
-        final language = (incompleteMatch.group(1) ?? '').trim();
-        final code = incompleteMatch.group(2) ?? '';
-        
-        // Skip LaTeX blocks - they're handled separately
-        if (language.toLowerCase() != 'latex' && code.trim().isNotEmpty) {
-          _codeBlocks[codeCounter] = {
-            'language': language.isEmpty ? 'text' : language,
-            'code': code.trim(),
-          };
-          
-          processedContent = processedContent.replaceRange(
-            incompleteMatch.start, 
-            incompleteMatch.end, 
-            '[CUSTOM_CODE_${codeCounter++}]'
-          );
-        }
-      }
-    }
+    // Regular code blocks are now handled by flutter_md - no extraction needed
 
     // Process tables - completely rewritten approach
     // More comprehensive table pattern that captures complete tables

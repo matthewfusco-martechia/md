@@ -197,8 +197,9 @@ class MarkdownPainter {
           indent: q.indent,
           theme: theme,
         ),
-        code: (c) => BlockPainter$Spacer( // Code blocks are now handled as widgets
-          count: 0,
+        code: (c) => BlockPainter$Code(
+          text: c.text,
+          language: c.language,
           theme: theme,
         ),
         list: (l) => BlockPainter$List(
@@ -208,8 +209,9 @@ class MarkdownPainter {
         divider: (d) => BlockPainter$Divider(
           theme: theme,
         ),
-        table: (t) => BlockPainter$Spacer( // Tables are now handled as widgets
-          count: 0,
+        table: (t) => BlockPainter$Table(
+          header: t.header,
+          rows: t.rows,
           theme: theme,
         ),
         spacer: (s) => BlockPainter$Spacer(
@@ -603,11 +605,6 @@ WidgetSpan _buildInlineLinkWidgetSpan(
   MarkdownThemeData theme,
   TextStyle? parentStyle,
 ) {
-  final linkStyle = theme.linkStyle ?? LinkStyle.defaultStyle;
-  final textStyle = theme.textStyleFor(span.style);
-  final finalTextStyle = parentStyle != null ? 
-      textStyle.merge(parentStyle) : textStyle;
-  
   final url = span.extra?['url'] as String?;
   
   return WidgetSpan(
@@ -616,36 +613,50 @@ WidgetSpan _buildInlineLinkWidgetSpan(
     child: _CustomLinkWidget(
       text: span.text,
       url: url ?? '',
-      linkStyle: linkStyle,
-      textStyle: finalTextStyle,
       onTap: theme.onLinkTap,
     ),
   );
 }
 
-/// A custom stateful widget for rendering styled links with hover effects
-class _CustomLinkWidget extends StatefulWidget {
+/// A custom stateless widget for rendering styled links with URL launching functionality
+class _CustomLinkWidget extends StatelessWidget {
   const _CustomLinkWidget({
     required this.text,
     required this.url,
-    required this.linkStyle,
-    required this.textStyle,
     this.onTap,
   });
 
   final String text;
   final String url;
-  final LinkStyle linkStyle;
-  final TextStyle textStyle;
   final void Function(String title, String url)? onTap;
 
   @override
-  State<_CustomLinkWidget> createState() => _CustomLinkWidgetState();
-}
+  Widget build(BuildContext context) {
+    final domain = _extractDomain(url).replaceAll(RegExp(r'[()]'), '').trim();
 
-class _CustomLinkWidgetState extends State<_CustomLinkWidget> {
-  bool _isHovered = false;
+    return InkWell(
+      onTap: () => _launchURL(url),
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2A2A2A),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          domain,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.2,
+          ),
+        ),
+      ),
+    );
+  }
 
+  /// Extracts the domain from the URL and returns it in uppercase.
   String _extractDomain(String url) {
     try {
       final uri = Uri.parse(url);
@@ -660,64 +671,24 @@ class _CustomLinkWidgetState extends State<_CustomLinkWidget> {
     }
   }
 
-  Future<void> _handleTap() async {
+  void _launchURL(String url) async {
     // Call custom onTap if provided
-    if (widget.onTap != null) {
-      widget.onTap!(widget.text, widget.url);
+    if (onTap != null) {
+      onTap!(text, url);
       return;
     }
     
     // Default behavior: launch URL
-    if (widget.url.isNotEmpty) {
+    if (url.isNotEmpty) {
       try {
-        final uri = Uri.parse(widget.url);
+        final uri = Uri.parse(url);
         if (await canLaunchUrl(uri)) {
-          await launchUrl(
-            uri,
-            mode: LaunchMode.externalApplication,
-          );
-        } else {
-          debugPrint('Could not launch URL: ${widget.url}');
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
         }
       } catch (e) {
-        debugPrint('Error launching URL: ${widget.url}, error: $e');
+        debugPrint('Error launching URL: $url, error: $e');
       }
     }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final domain = _extractDomain(widget.url);
-    
-    return GestureDetector(
-      onTap: _handleTap,
-      child: MouseRegion(
-        onEnter: (_) => setState(() => _isHovered = true),
-        onExit: (_) => setState(() => _isHovered = false),
-        cursor: SystemMouseCursors.click,
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 1),
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: _isHovered ? const Color(0xFF404040) : const Color(0xFF2A2A2A),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: const Color(0xFF404040), 
-              width: 0.5,
-            ),
-          ),
-          child: Text(
-            domain,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.2,
-            ),
-          ),
-        ),
-      ),
-    );
   }
 }
 
@@ -1023,75 +994,15 @@ class BlockPainter$Quote with ParagraphGestureHandler implements BlockPainter {
     );
 
     {
-      // --- Icons.format_quote_outlined --- //
-      try {
-        const quoteCodePoint = 0xf0a9;
-        const quoteFamily = 'MaterialIcons';
-        final textStyle = TextStyle(
-          fontFamily: quoteFamily,
-          fontSize:
-              (theme.quoteStyle?.fontSize ?? theme.textStyle.fontSize ?? 14.0) * 0.8,
-          color: const Color(0xFF7F7F7F), // Gray color for the quote icon.
-        );
-        final quotePainter = TextPainter(
-          text: TextSpan(
-            text: String.fromCharCode(quoteCodePoint),
-            style: textStyle,
-          ),
-          textAlign: TextAlign.start,
-          textDirection: theme.textDirection,
-          textScaler: theme.textScaler,
-        )..layout();
-        
-        // Position quote icons with better spacing
-        canvas
-          ..save()
-          ..translate(
-            size.width - quotePainter.width - quoteMargin - 8.0,
-            offset + _size.height - quotePainter.height - quoteMargin - 4.0,
-          )
-          ..rotate(math.pi);
-        quotePainter.paint(
-          canvas,
-          Offset(
-            quotePainter.width,
-            quotePainter.height,
-          ),
-        );
-        canvas.restore();
-        
-        quotePainter.paint(
-          canvas,
-          Offset(
-            size.width - quotePainter.width - quoteMargin - 8.0,
-            offset + _size.height - quotePainter.height - quoteMargin - 4.0,
-          ),
-        );
-      } on Object {
-        // Fallback to simple vertical line if icons fail
-        for (var i = 1; i <= indent; i++)
-          canvas.drawLine(
-            Offset(
-              i * lineIndent - lineIndent / 2,
-              offset + quoteMargin + 12,
-            ),
-            Offset(
-              i * lineIndent - lineIndent / 2,
-              offset + _size.height - quoteMargin - 12,
-            ),
-            linePaint,
-          );
-      }
+      // Paint the text with proper padding
+      painter.paint(
+        canvas,
+        Offset(
+          lineIndent + indent * lineIndent + quotePadding + quoteMargin,
+          offset + quotePadding + quoteMargin,
+        ),
+      );
     }
-
-    // Paint the text with proper padding
-    painter.paint(
-      canvas,
-      Offset(
-        lineIndent + indent * lineIndent + quotePadding + quoteMargin,
-        offset + quotePadding + quoteMargin,
-      ),
-    );
   }
 }
 
@@ -1304,6 +1215,104 @@ class BlockPainter$Divider implements BlockPainter {
       Offset(0, center),
       Offset(size.width, center),
       _paint,
+    );
+  }
+}
+
+/// A class for painting a code block in markdown.
+@internal
+class BlockPainter$Code implements BlockPainter {
+  BlockPainter$Code({
+    required this.text,
+    required this.language,
+    required this.theme,
+  }) : painter = TextPainter(
+          text: TextSpan(
+            text: text,
+            style: TextStyle(
+              fontFamily: 'Monaco', // Monospace font
+              fontSize: (theme.textStyle.fontSize ?? 14.0) * 0.9,
+              color: Colors.white,
+              height: 1.4,
+            ),
+          ),
+          textAlign: TextAlign.start,
+          textDirection: theme.textDirection,
+          textScaler: theme.textScaler,
+        );
+
+  final String text;
+  final String? language;
+  final MarkdownThemeData theme;
+  final TextPainter painter;
+
+  @override
+  Size get size => _size;
+  Size _size = Size.zero;
+
+  @override
+  void handleTapDown(PointerDownEvent _) {/* Do nothing */}
+
+  @override
+  void handleTapUp(PointerUpEvent _) {/* Do nothing */}
+
+  @override
+  Size layout(double width) {
+    const double padding = 16.0;
+    painter.layout(
+      minWidth: 0,
+      maxWidth: math.max(width - padding * 2, 0),
+    );
+    return _size = Size(
+      width,
+      painter.size.height + padding * 2,
+    );
+  }
+
+  @override
+  void paint(Canvas canvas, Size size, double offset) {
+    if (size.width < _size.width) return;
+
+    const double padding = 16.0;
+    const double borderRadius = 8.0;
+
+    // Draw background
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          0,
+          offset,
+          size.width,
+          _size.height,
+        ),
+        const Radius.circular(borderRadius),
+      ),
+      Paint()
+        ..color = const Color(0xFF1E1E1E) // Dark background for code
+        ..style = PaintingStyle.fill,
+    );
+
+    // Draw border
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          0,
+          offset,
+          size.width,
+          _size.height,
+        ),
+        const Radius.circular(borderRadius),
+      ),
+      Paint()
+        ..color = const Color(0xFF404040)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.0,
+    );
+
+    // Paint the code text
+    painter.paint(
+      canvas,
+      Offset(padding, offset + padding),
     );
   }
 }
