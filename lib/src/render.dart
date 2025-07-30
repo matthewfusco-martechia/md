@@ -852,7 +852,7 @@ class BlockPainter$Quote with ParagraphGestureHandler implements BlockPainter {
         const Radius.circular(4.0), // Rounded corners for the quote block.
       ),
       Paint()
-        ..color = const Color.fromARGB(255, 235, 235, 235)
+        ..color = const Color(0xFF1A1A1A) // Dark gray background
         ..isAntiAlias = false
         ..style = PaintingStyle.fill,
     );

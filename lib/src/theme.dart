@@ -72,8 +72,8 @@ class InlineCodeStyle {
 
   /// Creates a default inline code style.
   static const InlineCodeStyle defaultStyle = InlineCodeStyle(
-    backgroundColor: Color(0xFF2D2D2D),  // Dark gray background
-    textColor: Colors.white,             // White text
+    backgroundColor: Colors.transparent,     // Transparent background
+    textColor: Colors.orange,               // Orange text
     fontFamily: 'monospace',
     borderRadius: BorderRadius.all(Radius.circular(6.0)),  // Rounded corners
     padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),  
