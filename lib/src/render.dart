@@ -830,14 +830,23 @@ class BlockPainter$Quote with ParagraphGestureHandler implements BlockPainter {
 
   @override
   Size layout(double width) {
-    // Adjust width for indentation.
+    // Add padding and margin constants for consistency
+    const double quotePadding = 12.0;
+    const double quoteMargin = 8.0;
+    const double totalHorizontalPadding = (quotePadding + quoteMargin) * 2;
+    const double totalVerticalPadding = (quotePadding + quoteMargin) * 2;
+    
+    // Adjust width for indentation and padding
     painter.layout(
       minWidth: 0,
-      maxWidth: math.max(width - lineIndent - indent * lineIndent, 0),
+      maxWidth: math.max(
+        width - lineIndent - indent * lineIndent - totalHorizontalPadding, 
+        0
+      ),
     );
     return _size = Size(
-      painter.size.width + lineIndent + indent * lineIndent,
-      painter.size.height,
+      painter.size.width + lineIndent + indent * lineIndent + totalHorizontalPadding,
+      painter.size.height + totalVerticalPadding,
     );
   }
 
@@ -846,14 +855,40 @@ class BlockPainter$Quote with ParagraphGestureHandler implements BlockPainter {
     // If the width is less than required do not paint anything.
     if (size.width < _size.width) return;
 
+    // Add padding around the quote block for better spacing
+    const double quotePadding = 12.0;
+    const double quoteMargin = 8.0;
+    
     canvas.drawRRect(
       RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, offset, size.width, _size.height),
-        const Radius.circular(4.0), // Rounded corners for the quote block.
+        Rect.fromLTWH(
+          quoteMargin, 
+          offset + quoteMargin, 
+          size.width - (quoteMargin * 2), 
+          _size.height - (quoteMargin * 2)
+        ),
+        const Radius.circular(8.0), // Slightly larger rounded corners
       ),
       Paint()
         ..color = const Color(0xFF1A1A1A) // Dark gray background
-        ..isAntiAlias = false
+        ..isAntiAlias = true // Enable antialiasing for smoother appearance
+        ..style = PaintingStyle.fill,
+    );
+
+    // Add a subtle left border for the classic quote look
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(
+        Rect.fromLTWH(
+          quoteMargin, 
+          offset + quoteMargin, 
+          4.0, // Border width
+          _size.height - (quoteMargin * 2)
+        ),
+        const Radius.circular(2.0),
+      ),
+      Paint()
+        ..color = const Color(0xFF7F7F7F) // Gray accent border
+        ..isAntiAlias = true
         ..style = PaintingStyle.fill,
     );
 
@@ -865,7 +900,7 @@ class BlockPainter$Quote with ParagraphGestureHandler implements BlockPainter {
         final textStyle = TextStyle(
           fontFamily: quoteFamily,
           fontSize:
-              theme.quoteStyle?.fontSize ?? theme.textStyle.fontSize ?? 14.0,
+              (theme.quoteStyle?.fontSize ?? theme.textStyle.fontSize ?? 14.0) * 0.8,
           color: const Color(0xFF7F7F7F), // Gray color for the quote icon.
         );
         final quotePainter = TextPainter(
@@ -877,49 +912,54 @@ class BlockPainter$Quote with ParagraphGestureHandler implements BlockPainter {
           textDirection: theme.textDirection,
           textScaler: theme.textScaler,
         )..layout();
+        
+        // Position quote icons with better spacing
         canvas
           ..save()
           ..translate(
-            _size.width + quotePainter.width,
-            offset + _size.height,
+            size.width - quotePainter.width - quoteMargin - 8.0,
+            offset + _size.height - quotePainter.height - quoteMargin - 4.0,
           )
           ..rotate(math.pi);
         quotePainter.paint(
           canvas,
           Offset(
-            _size.width,
-            _size.height - quotePainter.height,
+            quotePainter.width,
+            quotePainter.height,
           ),
         );
         canvas.restore();
+        
         quotePainter.paint(
           canvas,
           Offset(
-            size.width - quotePainter.width - 2.0,
-            offset + _size.height - quotePainter.height,
+            size.width - quotePainter.width - quoteMargin - 8.0,
+            offset + _size.height - quotePainter.height - quoteMargin - 4.0,
           ),
         );
       } on Object {
+        // Fallback to simple vertical line if icons fail
         for (var i = 1; i <= indent; i++)
           canvas.drawLine(
             Offset(
               i * lineIndent - lineIndent / 2,
-              offset + 12,
+              offset + quoteMargin + 12,
             ),
             Offset(
               i * lineIndent - lineIndent / 2,
-              offset + _size.height - 12,
+              offset + _size.height - quoteMargin - 12,
             ),
             linePaint,
           );
       }
     }
 
+    // Paint the text with proper padding
     painter.paint(
       canvas,
       Offset(
-        lineIndent + indent * lineIndent,
-        offset,
+        lineIndent + indent * lineIndent + quotePadding + quoteMargin,
+        offset + quotePadding + quoteMargin,
       ),
     );
   }

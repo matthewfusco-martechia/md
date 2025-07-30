@@ -1,0 +1,515 @@
+// Automatic FlutterFlow imports
+import '/backend/backend.dart';
+import '/backend/schema/structs/index.dart';
+import '/backend/supabase/supabase.dart';
+import '/flutter_flow/flutter_flow_theme.dart';
+import '/flutter_flow/flutter_flow_util.dart';
+import '/custom_code/widgets/index.dart'; // Imports other custom widgets
+import '/custom_code/actions/index.dart'; // Imports custom actions
+import '/flutter_flow/custom_functions.dart'; // Imports custom functions
+import 'package:flutter/material.dart';
+// Begin custom widget code
+// DO NOT REMOVE OR MODIFY THE CODE ABOVE!
+
+import 'dart:math' as math;
+import 'package:flutter_md/flutter_md.dart'
+    as md; // Change alias to avoid conflicts
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+class MarkdownWidget extends StatefulWidget {
+  const MarkdownWidget({
+    super.key,
+    this.width,
+    this.height,
+    required this.data,
+    required this.fontSize,
+    required this.mdcolor,
+  });
+
+  final double? width;
+  final double? height;
+  final String data;
+  final double fontSize;
+  final Color mdcolor;
+
+  @override
+  State<MarkdownWidget> createState() => _MarkdownWidgetState();
+}
+
+class _MarkdownWidgetState extends State<MarkdownWidget> {
+  List<bool> _thinkBlockStates = [];
+
+  // Storage for custom components
+  Map<int, Map<String, String>> _codeBlocks = {};
+  Map<int, String> _tables = {};
+  Map<int, String> _latexBlocks = {}; // LaTeX blocks storage only
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeThinkBlockStates();
+  }
+
+  @override
+  void didUpdateWidget(MarkdownWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.data != widget.data) {
+      _initializeThinkBlockStates();
+    }
+  }
+
+  void _initializeThinkBlockStates() {
+    final thinkBlockPattern = RegExp(
+        r'<think(?:\s+complete="(true|false)")?\s*>(.*?)</think>',
+        dotAll: true);
+    final matches = thinkBlockPattern.allMatches(widget.data).toList();
+    _thinkBlockStates = List.generate(matches.length, (index) => false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Clear storage
+    _codeBlocks.clear();
+    _tables.clear();
+    _latexBlocks.clear();
+
+    // Extract think content
+    final thinkContent = _extractThinkContent(widget.data);
+    final mainContent = _removeThinkTags(widget.data);
+
+    print('=== DEBUG build: Think content length: ${thinkContent.length}');
+    print('=== DEBUG build: Main content length: ${mainContent.length}');
+    print('=== DEBUG build: Main content preview: ${mainContent.substring(0, math.min(100, mainContent.length))}...');
+
+    final widgets = <Widget>[];
+
+    // Add think block if present
+    if (widget.data.contains('<think>')) {
+      final isComplete = widget.data.contains('</think>');
+
+      while (_thinkBlockStates.isEmpty) {
+        _thinkBlockStates.add(false);
+      }
+
+      print('=== DEBUG build: Adding think block, isComplete: $isComplete');
+
+      widgets.add(md.ThinkBlock(
+        content: thinkContent,
+        isComplete: isComplete,
+        fontSize: widget.fontSize,
+        onToggle: () {
+          if (mounted) {
+            setState(() {
+              _thinkBlockStates[0] = !_thinkBlockStates[0];
+            });
+          }
+        },
+        contentWidget: thinkContent.isNotEmpty
+            ? _buildMarkdownWithCustomComponents(thinkContent)
+            : null,
+      ));
+    }
+
+    // Add main content ONLY if it's not empty
+    if (mainContent.trim().isNotEmpty) {
+      print('=== DEBUG build: Adding main content widget');
+      widgets.add(_buildMarkdownWithCustomComponents(mainContent));
+    } else {
+      print('=== DEBUG build: Main content is empty, not adding widget');
+    }
+
+    print('=== DEBUG build: Total widgets: ${widgets.length}');
+
+    return SizedBox(
+      width: widget.width,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: widgets,
+      ),
+    );
+  }
+
+  String _extractThinkContent(String content) {
+    final match = RegExp(
+            r'<think(?:\s+complete="(?:true|false)")?\s*>(.*?)</think>',
+            dotAll: true)
+        .firstMatch(content);
+    return match?.group(1)?.trim() ?? '';
+  }
+
+  String _removeThinkTags(String content) {
+    return content
+        .replaceAll(
+            RegExp(r'<think(?:\s+complete="(?:true|false)")?\s*>.*?</think>',
+                dotAll: true),
+            '')
+        .trim();
+  }
+
+  Widget _buildMarkdownWithCustomComponents(String content) {
+    try {
+      print('=== DEBUG: Input content length: ${content.length}');
+      print('=== DEBUG: Input content preview: ${content.substring(0, math.min(200, content.length))}...');
+      
+      // Replace code blocks, tables, and LaTeX with placeholders
+      String processedContent = _processContent(content);
+      
+      print('=== DEBUG: Processed content length: ${processedContent.length}');
+      print('=== DEBUG: Processed content: $processedContent');
+
+      // Find all placeholders
+      final codeMatches = RegExp(r'\[CUSTOM_CODE_(\d+)\]').allMatches(processedContent);
+      final tableMatches = RegExp(r'\[CUSTOM_TABLE_(\d+)\]').allMatches(processedContent);
+      final latexMatches = RegExp(r'\[CUSTOM_LATEX_(\d+)\]').allMatches(processedContent);
+
+      print('=== DEBUG: Found ${codeMatches.length} code blocks, ${tableMatches.length} tables, ${latexMatches.length} latex blocks');
+      print('=== DEBUG: Code blocks stored: ${_codeBlocks.keys.toList()}');
+
+      if (codeMatches.isEmpty && tableMatches.isEmpty && latexMatches.isEmpty) {
+        // No custom components, use flutter_md for clean rendering with custom inline code
+        print('=== DEBUG: Using flutter_md directly');
+        return _buildStyledText(processedContent);
+      }
+
+      // Build widgets with custom components
+      print('=== DEBUG: Building with custom components');
+      return _buildWithCustomPainters(
+          processedContent, codeMatches, tableMatches, latexMatches);
+    } catch (e, stackTrace) {
+      print('Markdown rendering error: $e');
+      print('Stack trace: $stackTrace');
+      return _buildFallbackText(content);
+    }
+  }
+
+  // Build markdown with custom components (code blocks, tables, LaTeX)
+  Widget _buildWithCustomPainters(
+      String processedContent,
+      Iterable<RegExpMatch> codeMatches,
+      Iterable<RegExpMatch> tableMatches,
+      Iterable<RegExpMatch> latexMatches) {
+    final widgets = <Widget>[];
+    final allMatches = <_Match>[];
+
+    // Collect all matches (code blocks, tables, LaTeX)
+    for (final match in codeMatches) {
+      allMatches.add(
+          _Match(match.start, match.end, 'code', int.parse(match.group(1)!)));
+    }
+    for (final match in tableMatches) {
+      allMatches.add(
+          _Match(match.start, match.end, 'table', int.parse(match.group(1)!)));
+    }
+    for (final match in latexMatches) {
+      allMatches.add(
+          _Match(match.start, match.end, 'latex', int.parse(match.group(1)!)));
+    }
+
+    // Sort by position
+    allMatches.sort((a, b) => a.start.compareTo(b.start));
+
+    int currentPos = 0;
+
+    for (final match in allMatches) {
+      // Add text before this match
+      if (match.start > currentPos) {
+        final textBefore = processedContent.substring(currentPos, match.start);
+        if (textBefore.trim().isNotEmpty) {
+          widgets.add(_buildStyledText(textBefore));
+        }
+      }
+
+      // Add custom component using flutter_md built-in components
+      if (match.type == 'code') {
+        final codeData = _codeBlocks[match.index];
+        if (codeData != null) {
+          widgets.add(md.CustomCodeBlock(
+            language: codeData['language']!,
+            code: codeData['code']!,
+            fontSize: widget.fontSize,
+          ));
+        }
+      } else if (match.type == 'table') {
+        final tableData = _tables[match.index];
+        if (tableData != null) {
+          widgets.add(md.CustomTable(
+            markdown: tableData,
+            fontSize: widget.fontSize,
+          ));
+        }
+      } else if (match.type == 'latex') {
+        final latexData = _latexBlocks[match.index];
+        if (latexData != null) {
+          widgets.add(md.CustomLatexRenderer(
+            content: latexData,
+            isDisplay: true,
+            style: TextStyle(
+              color: widget.mdcolor,
+              fontSize: widget.fontSize,
+              height: 1.5,
+            ),
+          ));
+        }
+      }
+
+      currentPos = match.end;
+    }
+
+    // Add remaining text
+    if (currentPos < processedContent.length) {
+      final textAfter = processedContent.substring(currentPos);
+      if (textAfter.trim().isNotEmpty) {
+        widgets.add(_buildStyledText(textAfter));
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: widgets,
+    );
+  }
+
+  // Main text building method using flutter_md
+  Widget _buildStyledText(String content) {
+    try {
+      print('=== DEBUG _buildStyledText: Input content: "$content"');
+      
+      if (content.trim().isEmpty) {
+        print('=== DEBUG _buildStyledText: Content is empty after trim');
+        return const SizedBox.shrink();
+      }
+      
+      final markdown = md.Markdown.fromString(content);
+      print('=== DEBUG _buildStyledText: Markdown blocks count: ${markdown.blocks.length}');
+      
+      for (int i = 0; i < markdown.blocks.length; i++) {
+        final block = markdown.blocks[i];
+        print('=== DEBUG _buildStyledText: Block $i: ${block.type} - "${block.text.substring(0, math.min(50, block.text.length))}..."');
+      }
+
+      return md.MarkdownTheme(
+        data: md.MarkdownThemeData(
+          textStyle: TextStyle(
+            color: widget.mdcolor,
+            fontSize: widget.fontSize,
+            height: 1.5,
+          ),
+          h1Style: TextStyle(
+            color: widget.mdcolor,
+            fontSize: widget.fontSize * 1.2,
+            fontWeight: FontWeight.bold,
+            height: 1.3,
+          ),
+          h2Style: TextStyle(
+            color: widget.mdcolor,
+            fontSize: widget.fontSize * 1.1,
+            fontWeight: FontWeight.w500,
+            height: 1.3,
+          ),
+          h3Style: TextStyle(
+            color: widget.mdcolor,
+            fontSize: widget.fontSize * 1.05,
+            fontWeight: FontWeight.w500,
+            height: 1.3,
+          ),
+          h4Style: TextStyle(
+            color: widget.mdcolor,
+            fontSize: widget.fontSize,
+            fontWeight: FontWeight.w500,
+            height: 1.3,
+          ),
+          h5Style: TextStyle(
+            color: widget.mdcolor,
+            fontSize: widget.fontSize,
+            fontWeight: FontWeight.w500,
+            height: 1.3,
+          ),
+          h6Style: TextStyle(
+            color: widget.mdcolor,
+            fontSize: widget.fontSize,
+            fontWeight: FontWeight.w500,
+            height: 1.3,
+          ),
+          // Filter out code blocks from flutter_md to use our custom ones
+          blockFilter: (block) => block.type != 'code',
+        ),
+        child: md.MarkdownWidget(markdown: markdown),
+      );
+    } catch (e, stackTrace) {
+      print('Flutter_md rendering error: $e');
+      print('Stack trace: $stackTrace');
+      return _buildFallbackText(content);
+    }
+  }
+
+  String _processContent(String content) {
+    int codeCounter = 0;
+    int tableCounter = 0;
+    int latexCounter = 0; // LaTeX counter only
+
+    // Handle escaped newlines for better table detection
+    String processedContent = content.replaceAll('\\n', '\n');
+
+    // Process LaTeX blocks FIRST to protect their content
+    processedContent = processedContent.replaceAllMapped(
+      RegExp(r'```latex\n?(.*?)\n?```', dotAll: true),
+      (match) {
+        final latexCode = match.group(1)?.trim() ?? '';
+        if (latexCode.isEmpty) return match.group(0)!;
+
+        _latexBlocks[latexCounter] = latexCode;
+        return '[CUSTOM_LATEX_${latexCounter++}]';
+      },
+    );
+
+    // Process incomplete LaTeX blocks (without closing ```)
+    processedContent = processedContent.replaceAllMapped(
+      RegExp(r'```latex\n?(.*?)$', dotAll: true),
+      (match) {
+        final latexCode = match.group(1)?.trim() ?? '';
+
+        // Skip if it ends with closing fence (shouldn't happen but safety check)
+        if (latexCode.endsWith('```')) return match.group(0)!;
+
+        _latexBlocks[latexCounter] = latexCode;
+        return '[CUSTOM_LATEX_${latexCounter++}]';
+      },
+    );
+
+    // Process complete code blocks SECOND to protect their content
+    processedContent = processedContent.replaceAllMapped(
+      RegExp(r'```([^\n]*)\n?(.*?)\n?```', dotAll: true),
+      (match) {
+        final language = (match.group(1) ?? '').trim();
+        final code = match.group(2) ?? '';
+
+        if (code.trim().isEmpty) return match.group(0)!;
+
+        // Skip LaTeX blocks - they're handled separately
+        if (language.toLowerCase() == 'latex') return match.group(0)!;
+
+        _codeBlocks[codeCounter] = {
+          'language': language.isEmpty ? 'text' : language,
+          'code': code.trim(),
+        };
+
+        return '[CUSTOM_CODE_${codeCounter++}]';
+      },
+    );
+
+    // Process incomplete code blocks
+    processedContent = processedContent.replaceAllMapped(
+      RegExp(r'```([^\n]*)\n?(.*?)$', dotAll: true),
+      (match) {
+        final language = (match.group(1) ?? '').trim();
+        final code = match.group(2) ?? '';
+
+        // Skip if it ends with closing fence (shouldn't happen but safety check)
+        if (code.endsWith('```')) return match.group(0)!;
+
+        // Skip LaTeX blocks - they're handled separately
+        if (language.toLowerCase() == 'latex') return match.group(0)!;
+
+        _codeBlocks[codeCounter] = {
+          'language': language.isEmpty ? 'text' : language,
+          'code': code.trim(),
+        };
+
+        return '[CUSTOM_CODE_${codeCounter++}]';
+      },
+    );
+
+    // Process tables - completely rewritten approach
+    // More comprehensive table pattern that captures complete tables
+    final tablePattern = RegExp(r'(\|[^\r\n]*\|(?:\r?\n|\n))+(?:\|[^\r\n]*\|)?',
+        multiLine: true);
+
+    final allMatches = <RegExpMatch>[];
+    final allMatchesText = <String>[];
+
+    // Find all potential table matches
+    for (final match in tablePattern.allMatches(processedContent)) {
+      final matchText = match.group(0) ?? '';
+
+      if (matchText.trim().isEmpty) continue;
+
+      // Split into lines to validate
+      final lines = matchText.trim().split(RegExp(r'\r?\n'));
+
+      // Must have at least 2 lines (header + data or header + separator + data)
+      if (lines.length < 2) {
+        continue;
+      }
+
+      // All lines must contain pipes
+      if (!lines.every((line) => line.contains('|'))) {
+        continue;
+      }
+
+      allMatches.add(match);
+      allMatchesText.add(matchText);
+    }
+
+    // Process matches in reverse order to avoid offset issues
+    for (int i = allMatches.length - 1; i >= 0; i--) {
+      final match = allMatches[i];
+      final matchText = allMatchesText[i];
+
+      // Store the table
+      _tables[tableCounter] = matchText.trim();
+
+      // Replace the match with placeholder
+      processedContent = processedContent.replaceRange(
+          match.start, match.end, '[CUSTOM_TABLE_${tableCounter++}]');
+    }
+
+    return processedContent;
+  }
+
+  Widget _buildFallbackText(String content) {
+    print('=== DEBUG _buildFallbackText: Using fallback for content: "${content.substring(0, math.min(100, content.length))}..."');
+    
+    return Container(
+      padding: const EdgeInsets.all(8.0),
+      decoration: BoxDecoration(
+        color: Colors.red.withOpacity(0.1),
+        border: Border.all(color: Colors.red.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(4.0),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Markdown Rendering Fallback',
+            style: TextStyle(
+              color: Colors.red,
+              fontSize: widget.fontSize * 0.8,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            content.isNotEmpty ? content : 'Empty content',
+            style: TextStyle(
+              color: widget.mdcolor,
+              fontSize: widget.fontSize,
+              height: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _Match {
+  final int start;
+  final int end;
+  final String type;
+  final int index;
+
+  _Match(this.start, this.end, this.type, this.index);
+} 
