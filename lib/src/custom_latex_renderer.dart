@@ -383,22 +383,8 @@ class CustomLatexRenderer extends StatelessWidget {
       // Clean the LaTeX content
       String cleanContent = content.trim();
       
-      // Remove various LaTeX display math delimiters
-      // Handle \[ ... \] delimiters
-      if (cleanContent.startsWith('\\[') && cleanContent.endsWith('\\]')) {
-        cleanContent = cleanContent.substring(2, cleanContent.length - 2).trim();
-      }
-      // Handle $$ ... $$ delimiters
-      else if (cleanContent.startsWith('\$\$') && cleanContent.endsWith('\$\$')) {
-        cleanContent = cleanContent.substring(2, cleanContent.length - 2).trim();
-      }
-      // Handle single $ ... $ delimiters (inline math)
-      else if (cleanContent.startsWith('\$') && cleanContent.endsWith('\$') && cleanContent.length > 2) {
-        cleanContent = cleanContent.substring(1, cleanContent.length - 1).trim();
-      }
-      
-      // Also remove any remaining \[ or \] that might be in the content
-      cleanContent = cleanContent.replaceAll('\\[', '').replaceAll('\\]', '');
+      // Remove various LaTeX math delimiters and environments
+      cleanContent = _removeLatexDelimiters(cleanContent);
       
       // Remove any leading/trailing whitespace again
       cleanContent = cleanContent.trim();
@@ -460,5 +446,94 @@ class CustomLatexRenderer extends StatelessWidget {
         ),
       );
     }
+  }
+
+  // Comprehensive LaTeX delimiter removal
+  String _removeLatexDelimiters(String content) {
+    String cleanContent = content;
+    
+    // List of LaTeX math environments to remove
+    final mathEnvironments = [
+      'equation',
+      'equation*',
+      'align',
+      'align*',
+      'gather',
+      'gather*',
+      'multline',
+      'multline*',
+      'split',
+      'displaymath',
+      'math',
+      'eqnarray',
+      'eqnarray*',
+      'flalign',
+      'flalign*',
+      'alignat',
+      'alignat*',
+      'xalignat',
+      'xalignat*',
+      'xxalignat',
+      'subequations',
+    ];
+    
+    // Remove \begin{env}...\end{env} environments
+    for (final env in mathEnvironments) {
+      final beginPattern = RegExp('\\\\begin\\{$env\\}\\s*', multiLine: true);
+      final endPattern = RegExp('\\s*\\\\end\\{$env\\}', multiLine: true);
+      cleanContent = cleanContent.replaceAll(beginPattern, '');
+      cleanContent = cleanContent.replaceAll(endPattern, '');
+    }
+    
+    // Handle basic math delimiters with priority order
+    // Handle \[ ... \] delimiters (display math)
+    if (cleanContent.startsWith('\\[') && cleanContent.endsWith('\\]')) {
+      cleanContent = cleanContent.substring(2, cleanContent.length - 2).trim();
+    }
+    // Handle \( ... \) delimiters (inline math)
+    else if (cleanContent.startsWith('\\(') && cleanContent.endsWith('\\)')) {
+      cleanContent = cleanContent.substring(2, cleanContent.length - 2).trim();
+    }
+    // Handle $$ ... $$ delimiters (display math)
+    else if (cleanContent.startsWith('\$\$') && cleanContent.endsWith('\$\$')) {
+      cleanContent = cleanContent.substring(2, cleanContent.length - 2).trim();
+    }
+    // Handle single $ ... $ delimiters (inline math)
+    else if (cleanContent.startsWith('\$') && cleanContent.endsWith('\$') && cleanContent.length > 2) {
+      cleanContent = cleanContent.substring(1, cleanContent.length - 1).trim();
+    }
+    
+    // Clean up any remaining delimiter fragments
+    final delimiterPatterns = [
+      '\\\\\\[', '\\\\\\]',    // \[ \]
+      '\\\\\\(', '\\\\\\)',    // \( \)
+      '\\\$\\\$',              // $$
+      '\\\\displaystyle',      // \displaystyle
+      '\\\\textstyle',         // \textstyle
+      '\\\\scriptstyle',       // \scriptstyle
+      '\\\\scriptscriptstyle', // \scriptscriptstyle
+    ];
+    
+    for (final pattern in delimiterPatterns) {
+      cleanContent = cleanContent.replaceAll(RegExp(pattern), '');
+    }
+    
+    // Remove any document-level commands that might interfere
+    final documentCommands = [
+      '\\\\documentclass.*?\\}',
+      '\\\\usepackage.*?\\}',
+      '\\\\begin\\{document\\}',
+      '\\\\end\\{document\\}',
+      '\\\\maketitle',
+      '\\\\title\\{.*?\\}',
+      '\\\\author\\{.*?\\}',
+      '\\\\date\\{.*?\\}',
+    ];
+    
+    for (final cmd in documentCommands) {
+      cleanContent = cleanContent.replaceAll(RegExp(cmd, multiLine: true, dotAll: true), '');
+    }
+    
+    return cleanContent.trim();
   }
 } 
