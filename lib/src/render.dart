@@ -1128,33 +1128,41 @@ class BlockPainter$List with ParagraphGestureHandler implements BlockPainter {
       // Skip empty spans
       if (filtered.isEmpty) continue;
       if (spans.isNotEmpty) spans.add(const TextSpan(text: '\n'));
-      spans
-        ..add(
-          TextSpan(
-            text: '${' ' * item.indent}${switch (item.marker) {
-              '-' => '•',
-              '*' => '•',
-              '+' => '•',
-              _ => item.marker,
-            }} ',
-            style: theme.textStyle,
-          ),
-        )
-        ..addAll(
-          filtered.map<InlineSpan>(
-            (span) {
-              // Handle links with custom styling
-              if (span.style.contains(MD$Style.link)) {
-                return _buildInlineLinkWidgetSpan(span, theme, null);
-              }
-              
-              return TextSpan(
-                text: span.text,
-                style: theme.textStyleFor(span.style),
-              );
-            },
-          ),
-        );
+      
+      // Create children list that can contain both TextSpan and WidgetSpan
+      final List<InlineSpan> children = [];
+      
+      // Add the bullet point
+      children.add(TextSpan(
+        text: '${' ' * item.indent}${switch (item.marker) {
+          '-' => '•',
+          '*' => '•',
+          '+' => '•',
+          _ => item.marker,
+        }} ',
+        style: theme.textStyle,
+      ));
+      
+      // Add the content spans (which can be TextSpan or WidgetSpan for links)
+      children.addAll(
+        filtered.map<InlineSpan>(
+          (span) {
+            // Handle links with custom styling
+            if (span.style.contains(MD$Style.link)) {
+              return _buildInlineLinkWidgetSpan(span, theme, null);
+            }
+            
+            return TextSpan(
+              text: span.text,
+              style: theme.textStyleFor(span.style),
+            );
+          },
+        ),
+      );
+      
+      // Add a single TextSpan with all children
+      spans.add(TextSpan(children: children));
+      
       if (item.children.isEmpty) continue;
       drawListSpans(
         spans: spans,
