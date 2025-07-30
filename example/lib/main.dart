@@ -26,7 +26,7 @@ class App extends StatelessWidget {
         themeMode: ThemeMode.light,
         theme: theme,
         darkTheme: theme,
-        home: const HomeScreen(),
+        home: const MainTabView(),
         builder: (context, child) => MarkdownTheme(
           data: MarkdownThemeData(
             textStyle: const TextStyle(fontSize: 14.0, color: Colors.black),
@@ -50,6 +50,171 @@ class App extends StatelessWidget {
           child: child!,
         ),
       );
+}
+
+/// {@template main_tab_view}
+/// Main tab view widget showing different markdown examples.
+/// {@endtemplate}
+class MainTabView extends StatelessWidget {
+  /// {@macro main_tab_view}
+  const MainTabView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Markdown Examples'),
+          bottom: const TabBar(
+            tabs: [
+              Tab(text: 'General'),
+              Tab(text: 'Inline Code Styling'),
+            ],
+          ),
+        ),
+        body: const TabBarView(
+          children: [
+            HomeScreen(),
+            InlineCodeDemoScreen(),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// {@template inline_code_demo_screen}
+/// Demo screen showing customizable inline code styling.
+/// {@endtemplate}
+class InlineCodeDemoScreen extends StatelessWidget {
+  /// {@macro inline_code_demo_screen}
+  const InlineCodeDemoScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Default styling example
+            _buildStyledExample(
+              title: 'Default Styling',
+              style: null, // Use default
+              markdown: 'Here is some `default inline code` with standard styling.',
+            ),
+            const SizedBox(height: 24),
+            
+            // Blue background example
+            _buildStyledExample(
+              title: 'Blue Background',
+              style: const InlineCodeStyle(
+                backgroundColor: Color(0xFFE3F2FD),
+                textColor: Color(0xFF1565C0),
+                borderRadius: BorderRadius.all(Radius.circular(6.0)),
+                padding: EdgeInsets.symmetric(horizontal: 6.0, vertical: 3.0),
+              ),
+              markdown: 'Blue styled `console.log("Hello World");` inline code.',
+            ),
+            const SizedBox(height: 24),
+            
+            // Green background example  
+            _buildStyledExample(
+              title: 'Green Success Theme',
+              style: const InlineCodeStyle(
+                backgroundColor: Color(0xFFE8F5E8),
+                textColor: Color(0xFF2E7D32),
+                borderRadius: BorderRadius.all(Radius.circular(4.0)),
+                padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                border: Border.fromBorderSide(
+                  BorderSide(color: Color(0xFF4CAF50), width: 1.0)),
+              ),
+              markdown: 'Success theme `npm install flutter_md` with border.',
+            ),
+            const SizedBox(height: 24),
+            
+            // Orange warning theme
+            _buildStyledExample(
+              title: 'Orange Warning Theme',
+              style: const InlineCodeStyle(
+                backgroundColor: Color(0xFFFFF3E0),
+                textColor: Color(0xFFE65100),
+                borderRadius: BorderRadius.all(Radius.circular(8.0)),
+                padding: EdgeInsets.symmetric(horizontal: 10.0, vertical: 5.0),
+                fontSize: 15.0,
+              ),
+              markdown: 'Warning styled `import "package:flutter_md/flutter_md.dart";` code.',
+            ),
+            const SizedBox(height: 24),
+            
+            // Dark theme example
+            _buildStyledExample(
+              title: 'Dark Theme',
+              style: const InlineCodeStyle(
+                backgroundColor: Color(0xFF2D2D2D),
+                textColor: Color(0xFF00FF00),
+                borderRadius: BorderRadius.all(Radius.circular(4.0)),
+                padding: EdgeInsets.symmetric(horizontal: 6.0, vertical: 3.0),
+                fontFamily: 'Courier New',
+                fontSize: 14.0,
+              ),
+              markdown: 'Dark theme `git commit -m "Add inline code styling"` with green text.',
+            ),
+            const SizedBox(height: 24),
+            
+            // Pill shape example
+            _buildStyledExample(
+              title: 'Pill Shape',
+              style: const InlineCodeStyle(
+                backgroundColor: Color(0xFFF3E5F5),
+                textColor: Color(0xFF7B1FA2),
+                borderRadius: BorderRadius.all(Radius.circular(20.0)),
+                padding: EdgeInsets.symmetric(horizontal: 12.0, vertical: 6.0),
+              ),
+              markdown: 'Pill shaped `rounded.corners = true` inline code.',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStyledExample({
+    required String title,
+    required InlineCodeStyle? style,  
+    required String markdown,
+  }) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            MarkdownTheme(
+              data: MarkdownThemeData(
+                textStyle: const TextStyle(fontSize: 16.0, color: Colors.black87),
+                inlineCodeStyle: style,
+                spanFilter: (span) => !span.style.contains(MD$Style.image),
+              ),
+              child: MarkdownWidget(
+                markdown: Markdown.fromString(markdown),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 /// {@template home_screen}

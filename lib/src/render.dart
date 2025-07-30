@@ -511,6 +511,7 @@ TapGestureRecognizer? _buildTapRecognizer(
 /// Helper function to create a [TextSpan] from markdown spans.
 /// This function filters the spans based on the theme's span filter,
 /// and applies the appropriate text style to each span.
+/// For inline code spans, creates custom WidgetSpans to support advanced styling.
 TextSpan _paragraphFromMarkdownSpans({
   required Iterable<MD$Span> spans,
   required MarkdownThemeData theme,
@@ -519,8 +520,14 @@ TextSpan _paragraphFromMarkdownSpans({
   final style = textStyle ?? theme.textStyle;
   final spanFilter = theme.spanFilter;
   final filtered = spanFilter != null ? spans.where(spanFilter) : spans;
+  
   final mapper = textStyle != null
       ? (MD$Span span) {
+          // Handle inline code with custom styling
+          if (span.style.contains(MD$Style.monospace)) {
+            return _buildInlineCodeWidgetSpan(span, theme, style);
+          }
+          
           return TextSpan(
             text: span.text,
             style: theme.textStyleFor(span.style).merge(style),
@@ -530,6 +537,11 @@ TextSpan _paragraphFromMarkdownSpans({
           );
         }
       : (MD$Span span) {
+          // Handle inline code with custom styling
+          if (span.style.contains(MD$Style.monospace)) {
+            return _buildInlineCodeWidgetSpan(span, theme, null);
+          }
+          
           return TextSpan(
             text: span.text,
             style: theme.textStyleFor(span.style),
@@ -541,6 +553,37 @@ TextSpan _paragraphFromMarkdownSpans({
   return TextSpan(
     style: textStyle ?? theme.textStyle,
     children: filtered.map<InlineSpan>(mapper).toList(growable: false),
+  );
+}
+
+/// Helper function to create a [WidgetSpan] for inline code with custom styling.
+WidgetSpan _buildInlineCodeWidgetSpan(
+  MD$Span span,
+  MarkdownThemeData theme,
+  TextStyle? parentStyle,
+) {
+  final codeStyle = theme.inlineCodeStyle ?? InlineCodeStyle.defaultStyle;
+  final textStyle = theme.textStyleFor(span.style);
+  final finalTextStyle = parentStyle != null ? textStyle.merge(parentStyle) : textStyle;
+  
+  return WidgetSpan(
+    alignment: PlaceholderAlignment.baseline,
+    baseline: TextBaseline.alphabetic,
+    child: Container(
+      margin: codeStyle.margin,
+      padding: codeStyle.padding ?? const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+      decoration: BoxDecoration(
+        color: codeStyle.backgroundColor ?? const Color.fromARGB(255, 235, 235, 235),
+        borderRadius: codeStyle.borderRadius ?? const BorderRadius.all(Radius.circular(4.0)),
+        border: codeStyle.border,
+      ),
+      child: Text(
+        span.text,
+        style: finalTextStyle.copyWith(
+          backgroundColor: Colors.transparent, // Remove background since Container handles it
+        ),
+      ),
+    ),
   );
 }
 

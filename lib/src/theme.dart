@@ -4,6 +4,107 @@ import 'package:flutter/material.dart';
 
 import '../flutter_md.dart';
 
+/// {@template inline_code_style}
+/// Style configuration for inline code spans.
+/// Allows full customization of inline code appearance including
+/// background color, border radius, padding, text color, font size, etc.
+/// {@endtemplate}
+@immutable
+class InlineCodeStyle {
+  /// Creates an [InlineCodeStyle] instance.
+  /// {@macro inline_code_style}
+  const InlineCodeStyle({
+    this.backgroundColor,
+    this.textColor,
+    this.fontSize,
+    this.fontFamily,
+    this.borderRadius,
+    this.padding,
+    this.margin,
+    this.border,
+  });
+
+  /// Background color of the inline code.
+  final Color? backgroundColor;
+
+  /// Text color of the inline code.
+  final Color? textColor;
+
+  /// Font size of the inline code.
+  final double? fontSize;
+
+  /// Font family of the inline code.
+  final String? fontFamily;
+
+  /// Border radius of the inline code background.
+  final BorderRadius? borderRadius;
+
+  /// Padding around the inline code text.
+  final EdgeInsetsGeometry? padding;
+
+  /// Margin around the inline code container.
+  final EdgeInsetsGeometry? margin;
+
+  /// Border around the inline code container.
+  final Border? border;
+
+  /// Creates a copy of this style with the given fields replaced by new values.
+  InlineCodeStyle copyWith({
+    Color? backgroundColor,
+    Color? textColor,
+    double? fontSize,
+    String? fontFamily,
+    BorderRadius? borderRadius,
+    EdgeInsetsGeometry? padding,
+    EdgeInsetsGeometry? margin,
+    Border? border,
+  }) =>
+      InlineCodeStyle(
+        backgroundColor: backgroundColor ?? this.backgroundColor,
+        textColor: textColor ?? this.textColor,
+        fontSize: fontSize ?? this.fontSize,
+        fontFamily: fontFamily ?? this.fontFamily,
+        borderRadius: borderRadius ?? this.borderRadius,
+        padding: padding ?? this.padding,
+        margin: margin ?? this.margin,
+        border: border ?? this.border,
+      );
+
+  /// Creates a default inline code style.
+  static const InlineCodeStyle defaultStyle = InlineCodeStyle(
+    backgroundColor: Color.fromARGB(255, 235, 235, 235),
+    textColor: Colors.black,
+    fontFamily: 'monospace',
+    borderRadius: BorderRadius.all(Radius.circular(4.0)),
+    padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+  );
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is InlineCodeStyle &&
+          runtimeType == other.runtimeType &&
+          backgroundColor == other.backgroundColor &&
+          textColor == other.textColor &&
+          fontSize == other.fontSize &&
+          fontFamily == other.fontFamily &&
+          borderRadius == other.borderRadius &&
+          padding == other.padding &&
+          margin == other.margin &&
+          border == other.border;
+
+  @override
+  int get hashCode =>
+      backgroundColor.hashCode ^
+      textColor.hashCode ^
+      fontSize.hashCode ^
+      fontFamily.hashCode ^
+      borderRadius.hashCode ^
+      padding.hashCode ^
+      margin.hashCode ^
+      border.hashCode;
+}
+
 /// {@template markdown_theme_data}
 /// Theme data for Markdown widgets.
 /// {@endtemplate}
@@ -21,6 +122,7 @@ class MarkdownThemeData implements ThemeExtension<MarkdownThemeData> {
     this.h5Style,
     this.h6Style,
     this.quoteStyle,
+    this.inlineCodeStyle,
     this.blockFilter,
     this.spanFilter,
     this.builder,
@@ -60,6 +162,10 @@ class MarkdownThemeData implements ThemeExtension<MarkdownThemeData> {
 
   /// Default text style for quote blocks.
   final TextStyle? quoteStyle;
+
+  /// Style configuration for inline code spans.
+  /// Allows full customization of inline code appearance.
+  final InlineCodeStyle? inlineCodeStyle;
 
   /// A filter function to determine whether a block should be rendered.
   /// If the function returns `true`, the block will be rendered.
@@ -134,38 +240,53 @@ class MarkdownThemeData implements ThemeExtension<MarkdownThemeData> {
   final HashMap<int, TextStyle> _textStyles;
 
   /// Returns a [TextStyle] for the given [MD$Style].
+  /// For inline code (monospace), uses the custom [inlineCodeStyle] if provided.
   TextStyle textStyleFor(MD$Style style) => _textStyles.putIfAbsent(
         style.hashCode,
-        () => textStyle.copyWith(
-          fontWeight: switch (style) {
-            var s when s.contains(MD$Style.bold) => FontWeight.bold,
-            var s when s.contains(MD$Style.link) => FontWeight.bold,
-            var s when s.contains(MD$Style.highlight) => FontWeight.bold,
-            _ => null,
-          },
-          fontStyle: style.contains(MD$Style.italic) ? FontStyle.italic : null,
-          decoration: switch (style) {
-            var s when s.contains(MD$Style.underline) =>
-              TextDecoration.underline,
-            var s when s.contains(MD$Style.strikethrough) =>
-              TextDecoration.lineThrough,
-            _ => null,
-          },
-          fontFamily: style.contains(MD$Style.monospace) ? 'monospace' : null,
-          color: switch (style) {
-            var s when s.contains(MD$Style.link) => Colors.indigo,
-            var s when s.contains(MD$Style.highlight) => Colors.black,
-            var s when s.contains(MD$Style.monospace) => Colors.black,
-            _ => null,
-          },
-          backgroundColor: switch (style) {
-            var s when s.contains(MD$Style.highlight) =>
-              Colors.deepOrange.withValues(alpha: 0.25),
-            var s when s.contains(MD$Style.monospace) =>
-              Colors.grey.withValues(alpha: 0.25),
-            _ => null,
-          },
-        ),
+        () {
+          // Handle inline code styling with custom style
+          if (style.contains(MD$Style.monospace)) {
+            final codeStyle = inlineCodeStyle ?? InlineCodeStyle.defaultStyle;
+            return textStyle.copyWith(
+              fontFamily: codeStyle.fontFamily,
+              color: codeStyle.textColor,
+              fontSize: codeStyle.fontSize,
+              backgroundColor: codeStyle.backgroundColor,
+            );
+          }
+          
+          // Handle other styles as before
+          return textStyle.copyWith(
+            fontWeight: switch (style) {
+              var s when s.contains(MD$Style.bold) => FontWeight.bold,
+              var s when s.contains(MD$Style.link) => FontWeight.bold,
+              var s when s.contains(MD$Style.highlight) => FontWeight.bold,
+              _ => null,
+            },
+            fontStyle: style.contains(MD$Style.italic) ? FontStyle.italic : null,
+            decoration: switch (style) {
+              var s when s.contains(MD$Style.underline) =>
+                TextDecoration.underline,
+              var s when s.contains(MD$Style.strikethrough) =>
+                TextDecoration.lineThrough,
+              _ => null,
+            },
+            fontFamily: style.contains(MD$Style.monospace) ? 'monospace' : null,
+            color: switch (style) {
+              var s when s.contains(MD$Style.link) => Colors.indigo,
+              var s when s.contains(MD$Style.highlight) => Colors.black,
+              var s when s.contains(MD$Style.monospace) => Colors.black,
+              _ => null,
+            },
+            backgroundColor: switch (style) {
+              var s when s.contains(MD$Style.highlight) =>
+                Colors.deepOrange.withValues(alpha: 0.25),
+              var s when s.contains(MD$Style.monospace) =>
+                Colors.grey.withValues(alpha: 0.25),
+              _ => null,
+            },
+          );
+        },
       );
 
   @override
@@ -180,6 +301,7 @@ class MarkdownThemeData implements ThemeExtension<MarkdownThemeData> {
     TextStyle? h5Style,
     TextStyle? h6Style,
     TextStyle? quoteStyle,
+    InlineCodeStyle? inlineCodeStyle,
     bool Function(MD$Block block)? blockFilter,
     bool Function(MD$Span span)? spanFilter,
   }) =>
@@ -194,6 +316,7 @@ class MarkdownThemeData implements ThemeExtension<MarkdownThemeData> {
         h5Style: h5Style ?? this.h5Style,
         h6Style: h6Style ?? this.h6Style,
         quoteStyle: quoteStyle ?? this.quoteStyle,
+        inlineCodeStyle: inlineCodeStyle ?? this.inlineCodeStyle,
         blockFilter: blockFilter ?? this.blockFilter,
         spanFilter: spanFilter ?? this.spanFilter,
       );
