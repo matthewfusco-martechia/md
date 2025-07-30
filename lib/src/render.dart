@@ -1,13 +1,13 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:meta/meta.dart';
 
+import 'custom_code_block.dart';
 import 'markdown.dart';
 import 'nodes.dart';
 import 'theme.dart';
@@ -196,9 +196,8 @@ class MarkdownPainter {
           indent: q.indent,
           theme: theme,
         ),
-        code: (c) => BlockPainter$Code(
-          language: c.language,
-          text: c.text,
+        code: (c) => BlockPainter$Spacer( // Code blocks are now handled as widgets
+          count: 0,
           theme: theme,
         ),
         list: (l) => BlockPainter$List(
@@ -208,9 +207,8 @@ class MarkdownPainter {
         divider: (d) => BlockPainter$Divider(
           theme: theme,
         ),
-        table: (t) => BlockPainter$Table(
-          header: t.header,
-          rows: t.rows,
+        table: (t) => BlockPainter$Spacer( // Tables are now handled as widgets
+          count: 0,
           theme: theme,
         ),
         spacer: (s) => BlockPainter$Spacer(
@@ -511,7 +509,8 @@ TapGestureRecognizer? _buildTapRecognizer(
 /// Helper function to create a [TextSpan] from markdown spans.
 /// This function filters the spans based on the theme's span filter,
 /// and applies the appropriate text style to each span.
-/// For inline code spans, creates custom WidgetSpans to support advanced styling.
+/// For inline code spans, creates custom WidgetSpans to support advanced 
+/// styling.
 TextSpan _paragraphFromMarkdownSpans({
   required Iterable<MD$Span> spans,
   required MarkdownThemeData theme,
@@ -556,7 +555,8 @@ TextSpan _paragraphFromMarkdownSpans({
   );
 }
 
-/// Helper function to create a [WidgetSpan] for inline code with custom styling.
+/// Helper function to create a [WidgetSpan] for inline code with custom 
+/// styling.
 WidgetSpan _buildInlineCodeWidgetSpan(
   MD$Span span,
   MarkdownThemeData theme,
@@ -564,23 +564,27 @@ WidgetSpan _buildInlineCodeWidgetSpan(
 ) {
   final codeStyle = theme.inlineCodeStyle ?? InlineCodeStyle.defaultStyle;
   final textStyle = theme.textStyleFor(span.style);
-  final finalTextStyle = parentStyle != null ? textStyle.merge(parentStyle) : textStyle;
+  final finalTextStyle = parentStyle != null ? 
+      textStyle.merge(parentStyle) : textStyle;
   
   return WidgetSpan(
     alignment: PlaceholderAlignment.baseline,
     baseline: TextBaseline.alphabetic,
     child: Container(
       margin: codeStyle.margin,
-      padding: codeStyle.padding ?? const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+      padding: codeStyle.padding ?? 
+          const EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
       decoration: BoxDecoration(
-        color: codeStyle.backgroundColor ?? const Color.fromARGB(255, 235, 235, 235),
-        borderRadius: codeStyle.borderRadius ?? const BorderRadius.all(Radius.circular(4.0)),
+        color: codeStyle.backgroundColor ?? 
+            const Color.fromARGB(255, 235, 235, 235),
+        borderRadius: codeStyle.borderRadius ?? 
+            const BorderRadius.all(Radius.circular(4.0)),
         border: codeStyle.border,
       ),
       child: Text(
         span.text,
         style: finalTextStyle.copyWith(
-          backgroundColor: Colors.transparent, // Remove background since Container handles it
+          backgroundColor: Colors.transparent, // Container handles background
         ),
       ),
     ),
@@ -1118,80 +1122,6 @@ class BlockPainter$Divider implements BlockPainter {
       Offset(0, center),
       Offset(size.width, center),
       _paint,
-    );
-  }
-}
-
-/// A class for painting a code block in markdown.
-@internal
-class BlockPainter$Code implements BlockPainter {
-  BlockPainter$Code({
-    required String text,
-    required String? language,
-    required this.theme,
-  }) : painter = TextPainter(
-          text: TextSpan(
-            text: text,
-            style: theme.textStyle.copyWith(
-              fontFamily: 'monospace',
-              fontSize: theme.textStyle.fontSize ?? 14.0,
-            ),
-          ),
-          textAlign: TextAlign.start,
-          textDirection: theme.textDirection,
-          textScaler: theme.textScaler,
-        );
-
-  static const double padding = 8.0; // Padding for code blocks.
-
-  final MarkdownThemeData theme;
-
-  final TextPainter painter;
-
-  @override
-  Size get size => _size;
-  Size _size = Size.zero;
-
-  @override
-  void handleTapDown(PointerDownEvent _) {/* Do nothing */}
-
-  @override
-  void handleTapUp(PointerUpEvent _) {/* Do nothing */}
-
-  @override
-  Size layout(double width) {
-    if (width <= padding * 2) {
-      // If the width is less than or equal to padding, return zero size.
-      _size = Size.zero;
-      return _size;
-    }
-    painter.layout(
-      minWidth: 0,
-      maxWidth: width - padding * 2,
-    );
-    return _size = Size(
-      painter.size.width + padding * 2, // Add padding to the width.
-      painter.size.height + padding * 2, // Add padding to the height.
-    );
-  }
-
-  @override
-  void paint(Canvas canvas, Size size, double offset) {
-    // If the width is less than required do not paint anything.
-    if (size.width < _size.width) return;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(0, offset, size.width, _size.height),
-        const Radius.circular(padding),
-      ),
-      Paint()
-        ..color = const Color.fromARGB(255, 235, 235, 235)
-        ..isAntiAlias = false
-        ..style = PaintingStyle.fill,
-    );
-    painter.paint(
-      canvas,
-      Offset(padding, offset + padding),
     );
   }
 }

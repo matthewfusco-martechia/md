@@ -62,14 +62,18 @@ class MainTabView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 2,
+      length: 5,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Markdown Examples'),
           bottom: const TabBar(
+            isScrollable: true,
             tabs: [
               Tab(text: 'General'),
-              Tab(text: 'Inline Code Styling'),
+              Tab(text: 'Inline Code'),
+              Tab(text: 'Interactive Code'),
+              Tab(text: 'Interactive Tables'),
+              Tab(text: 'LaTeX Math'),
             ],
           ),
         ),
@@ -77,6 +81,9 @@ class MainTabView extends StatelessWidget {
           children: [
             HomeScreen(),
             InlineCodeDemoScreen(),
+            InteractiveCodeBlockDemoScreen(),
+            InteractiveTableDemoScreen(),
+            LatexDemoScreen(),
           ],
         ),
       ),
@@ -100,10 +107,10 @@ class InlineCodeDemoScreen extends StatelessWidget {
           children: [
             // Default styling example
             _buildStyledExample(
-              title: 'Default Styling',
+              title: 'Default Styling (Modern Dark Theme)',
               style: null, // Use default
-              markdown: 'Here is some `default inline code` with standard '
-                  'styling.',
+              markdown: 'Here is some `default inline code` with the new '
+                  'modern dark styling.',
             ),
             const SizedBox(height: 24),
             
@@ -423,6 +430,48 @@ _`You` **can** __combine__ ~~them~~_
 
 ---
 
+## Code Blocks (NEW ADVANCED STYLING!)
+
+Here's a JavaScript code block with the new advanced styling:
+
+```javascript
+function greetUser(name, age) {
+  // Check if user is old enough
+  if (age >= 18) {
+    console.log(`Hello ${name}! Welcome to our platform.`);
+    return true;
+  } else {
+    console.log(`Sorry ${name}, you must be 18 or older.`);
+    return false;
+  }
+}
+
+// Usage example
+const user = { name: "John", age: 25 };
+const isAllowed = greetUser(user.name, user.age);
+```
+
+And here's a Python example:
+
+```python
+def calculate_fibonacci(n):
+    """Calculate the nth Fibonacci number."""
+    if n <= 1:
+        return n
+    
+    a, b = 0, 1
+    for i in range(2, n + 1):
+        a, b = b, a + b
+    
+    return b
+
+# Generate first 10 Fibonacci numbers
+for i in range(10):
+    print(f"F({i}) = {calculate_fibonacci(i)}")
+```
+
+---
+
 ## Paragraphs
 
   **Lorem ipsum** dolor sit amet, consectetur adipiscing elit.
@@ -478,16 +527,539 @@ You may be using [Markdown Live Preview](https://markdownlivepreview.com/).
 
 ---
 
-## Blocks of code
+## More Code Examples
 
-```
-let message = 'Hello world';
-alert(message);
+Dart code with the new styling:
+
+```dart
+class MarkdownWidget extends StatelessWidget {
+  const MarkdownWidget({
+    Key? key,
+    required this.markdown,
+  }) : super(key: key);
+
+  final Markdown markdown;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      painter: MarkdownPainter(
+        markdown: markdown,
+        theme: MarkdownTheme.of(context),
+      ),
+    );
+  }
+}
 ```
 
 ---
 
 ## Inline code
 
-This example is using `package:flutter_md/flutter_md.dart`.
+This example is using `package:flutter_md/flutter_md.dart` with enhanced styling.
 ''';
+
+/// {@template interactive_code_block_demo_screen}
+/// Demo screen showing the new interactive code block features.
+/// {@endtemplate}
+class InteractiveCodeBlockDemoScreen extends StatelessWidget {
+  /// {@macro interactive_code_block_demo_screen}
+  const InteractiveCodeBlockDemoScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '🚀 Interactive Code Blocks',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Code blocks now have full interactive functionality:',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '📋 Copy button with feedback\n'
+              '📤 Share as file\n'
+              '🔍 Expand to full view\n'
+              '🎨 Syntax highlighting\n'
+              '🏷️ Language badges',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            
+            MarkdownWidget(
+              markdown: Markdown.fromString('''
+# Interactive Code Blocks Demo
+
+## JavaScript with Full Features
+Try the buttons on this code block:
+
+```javascript
+// Advanced JavaScript example with multiple features
+class MarkdownProcessor {
+  constructor(options = {}) {
+    this.syntaxHighlighting = options.syntax || true;
+    this.interactiveMode = options.interactive || false;
+  }
+
+  processCodeBlock(code, language) {
+    const features = {
+      copy: true,
+      share: true,
+      expand: true,
+      highlight: this.syntaxHighlighting
+    };
+    
+    return {
+      processed: this.highlightSyntax(code, language),
+      features,
+      metadata: {
+        language,
+        lines: code.split('\\n').length,
+        characters: code.length
+      }
+    };
+  }
+
+  highlightSyntax(code, language) {
+    // Syntax highlighting implementation
+    return code.replace(/\\/\\/(.*)/g, '<comment>\$1</comment>');
+  }
+}
+
+// Usage example
+const processor = new MarkdownProcessor({
+  syntax: true,
+  interactive: true
+});
+
+const result = processor.processCodeBlock(codeString, 'javascript');
+console.log('Processed:', result);
+```
+
+## Python Data Science Example
+This shows syntax highlighting for Python:
+
+```python
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+import matplotlib.pyplot as plt
+
+def analyze_data(dataset_path):
+    """
+    Comprehensive data analysis pipeline
+    """
+    # Load and explore data
+    df = pd.read_csv(dataset_path)
+    print(f"Dataset shape: {df.shape}")
+    
+    # Feature engineering
+    numeric_features = df.select_dtypes(include=[np.number]).columns
+    categorical_features = df.select_dtypes(include=['object']).columns
+    
+    # Handle missing values
+    df[numeric_features] = df[numeric_features].fillna(df[numeric_features].median())
+    df[categorical_features] = df[categorical_features].fillna('Unknown')
+    
+    # Model training
+    X = df.drop('target', axis=1)
+    y = df['target']
+    
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.2, random_state=42
+    )
+    
+    model = RandomForestClassifier(
+        n_estimators=100,
+        max_depth=10,
+        random_state=42
+    )
+    
+    model.fit(X_train, y_train)
+    accuracy = model.score(X_test, y_test)
+    
+    return {
+        'model': model,
+        'accuracy': accuracy,
+        'features': list(X.columns),
+        'data_shape': df.shape
+    }
+
+# Run analysis
+results = analyze_data('dataset.csv')
+print(f"Model accuracy: {results['accuracy']:.2%}")
+```
+
+## Dart/Flutter Code
+Perfect for Flutter developers:
+
+```dart
+import 'package:flutter/material.dart';
+import 'package:flutter_highlight/flutter_highlight.dart';
+
+class InteractiveCodeBlock extends StatefulWidget {
+  const InteractiveCodeBlock({
+    Key? key,
+    required this.code,
+    required this.language,
+  }) : super(key: key);
+
+  final String code;
+  final String language;
+
+  @override
+  State<InteractiveCodeBlock> createState() => _InteractiveCodeBlockState();
+}
+
+class _InteractiveCodeBlockState extends State<InteractiveCodeBlock>
+    with TickerProviderStateMixin {
+  late AnimationController _copyController;
+  late Animation<double> _copyAnimation;
+  bool _isCopied = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _copyController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+    _copyAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _copyController,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _copyController.dispose();
+    super.dispose();
+  }
+
+  void _handleCopy() async {
+    await Clipboard.setData(ClipboardData(text: widget.code));
+    setState(() => _isCopied = true);
+    _copyController.forward();
+    
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() => _isCopied = false);
+        _copyController.reverse();
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1A1A),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          _buildHeader(),
+          _buildCodeContent(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        children: [
+          _buildLanguageBadge(),
+          const Spacer(),
+          _buildActionButtons(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButtons() {
+    return Row(
+      children: [
+        AnimatedBuilder(
+          animation: _copyAnimation,
+          builder: (context, child) {
+            return IconButton(
+              onPressed: _handleCopy,
+              icon: Icon(
+                _isCopied ? Icons.check : Icons.copy,
+                color: _isCopied ? Colors.green : Colors.grey,
+              ),
+            );
+          },
+        ),
+        // More buttons...
+      ],
+    );
+  }
+}
+```
+
+## Try It Out!
+Click the buttons on any code block above to:
+- 📋 **Copy** the code to your clipboard
+- 📤 **Share** the code as a file
+- 🔍 **Expand** to see it in full screen
+
+The syntax highlighting and interactive features make this perfect for documentation, tutorials, and technical content!
+              '''),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// {@template interactive_table_demo_screen}
+/// Demo screen showing the new interactive table features.
+/// {@endtemplate}
+class InteractiveTableDemoScreen extends StatelessWidget {
+  /// {@macro interactive_table_demo_screen}
+  const InteractiveTableDemoScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '📊 Interactive Tables',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Tables now have full interactive functionality:',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '📋 Copy table as markdown\n'
+              '📤 Export as CSV file\n'
+              '🔍 Expand to full view\n'
+              '🎨 Professional dark theme\n'
+              '📏 Auto-sizing columns',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            
+            MarkdownWidget(
+              markdown: Markdown.fromString('''
+# Interactive Tables Demo
+
+## Simple Data Table
+Basic table with interactive features:
+
+| Feature | Status | Priority |
+| --- | --- | --- |
+| **Copy to Clipboard** | ✅ Complete | High |
+| **CSV Export** | ✅ Complete | High |
+| **Expand View** | ✅ Complete | Medium |
+| **Dark Theme** | ✅ Complete | High |
+| **Responsive** | ✅ Complete | Medium |
+
+## Technology Comparison Table
+Compare different technologies:
+
+| Technology | **Performance** | **Learning Curve** | **Community** | **Use Case** |
+| --- | --- | --- | --- | --- |
+| **Flutter** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐⭐ | Mobile & Web Apps |
+| **React Native** | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ | Cross-platform Apps |
+| **SwiftUI** | ⭐⭐⭐⭐⭐ | ⭐⭐ | ⭐⭐⭐ | iOS Native Apps |
+| **Jetpack Compose** | ⭐⭐⭐⭐ | ⭐⭐⭐ | ⭐⭐⭐ | Android Native Apps |
+
+## Project Timeline Table
+Track project milestones:
+
+| Phase | **Start Date** | **End Date** | **Status** | **Deliverables** |
+| --- | --- | --- | --- | --- |
+| **Planning** | 2024-01-01 | 2024-01-15 | ✅ Complete | Requirements Doc |
+| **Design** | 2024-01-15 | 2024-02-01 | ✅ Complete | UI/UX Mockups |
+| **Development** | 2024-02-01 | 2024-03-15 | 🔄 In Progress | Working Prototype |
+| **Testing** | 2024-03-15 | 2024-04-01 | ⏳ Pending | QA Report |
+| **Deployment** | 2024-04-01 | 2024-04-15 | ⏳ Pending | Live Application |
+
+## Code Samples in Tables
+Tables can even contain code blocks:
+
+| Language | **Example** | **Use Case** |
+| --- | --- | --- |
+| **Dart** | ```flutter<br>Widget build(context) {<br>  return Text('Hello');<br>}``` | Flutter Development |
+| **JavaScript** | ```js<br>const hello = () => {<br>  console.log('World');<br>};``` | Web Development |
+| **Python** | ```python<br>def greet(name):<br>    return f"Hello {name}!"``` | Data Science |
+
+## Try It Out!
+Click the buttons on any table above to:
+- 📋 **Copy** the table markdown to your clipboard
+- 📤 **Export** as CSV file for spreadsheet applications
+- 🔍 **Expand** to see it in full screen mode
+
+Perfect for documentation, data presentation, and technical comparisons!
+              '''),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// {@template latex_demo_screen}
+/// Demo screen showing LaTeX mathematical equation rendering.
+/// {@endtemplate}
+class LatexDemoScreen extends StatelessWidget {
+  /// {@macro latex_demo_screen}
+  const LatexDemoScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '🧮 LaTeX Mathematics',
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Mathematical equations with full LaTeX support:',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '📋 Copy LaTeX source code\n'
+              '📤 Share as .tex file\n'
+              '🔍 Expand to full view\n'
+              '⚡ Real-time rendering\n'
+              '📖 Document support',
+              style: TextStyle(fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            
+            MarkdownWidget(
+              markdown: Markdown.fromString('''
+# LaTeX Mathematics Demo
+
+## Simple Math Expressions
+Inline math: The quadratic formula is \$x = \\frac{-b \\pm \\sqrt{b^2-4ac}}{2a}\$.
+
+Display math:
+\$\$E = mc^2\$\$
+
+## Complex Equations
+The Schrödinger equation:
+
+```latex
+\\begin{equation}
+i\\hbar\\frac{\\partial}{\\partial t}\\Psi(\\mathbf{r},t) = \\hat{H}\\Psi(\\mathbf{r},t)
+\\end{equation}
+```
+
+## Matrix Operations
+Linear algebra expressions:
+
+```latex
+\\begin{align}
+\\mathbf{A} &= \\begin{pmatrix}
+a_{11} & a_{12} & a_{13} \\\\
+a_{21} & a_{22} & a_{23} \\\\
+a_{31} & a_{32} & a_{33}
+\\end{pmatrix} \\\\
+\\det(\\mathbf{A}) &= a_{11}(a_{22}a_{33} - a_{23}a_{32}) - a_{12}(a_{21}a_{33} - a_{23}a_{31}) + a_{13}(a_{21}a_{32} - a_{22}a_{31})
+\\end{align}
+```
+
+## Calculus Examples
+Integration and differentiation:
+
+```latex
+\\begin{gather}
+\\frac{d}{dx}\\left[\\int_a^x f(t)\\,dt\\right] = f(x) \\\\
+\\int_0^{\\infty} e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2} \\\\
+\\lim_{n \\to \\infty} \\left(1 + \\frac{1}{n}\\right)^n = e
+\\end{gather}
+```
+
+## Statistics & Probability
+Normal distribution and more:
+
+```latex
+\\begin{equation}
+f(x) = \\frac{1}{\\sigma\\sqrt{2\\pi}} e^{-\\frac{1}{2}\\left(\\frac{x-\\mu}{\\sigma}\\right)^2}
+\\end{equation}
+```
+
+## LaTeX Documents
+Full document example:
+
+```latex
+\\documentclass{article}
+\\usepackage{amsmath}
+\\usepackage{amsfonts}
+
+\\title{Mathematical Expressions}
+\\author{Flutter MD}
+\\date{\\today}
+
+\\begin{document}
+\\maketitle
+
+\\section{Introduction}
+This document demonstrates LaTeX support in Flutter MD.
+
+\\section{Equations}
+The famous Euler's identity:
+\\begin{equation}
+e^{i\\pi} + 1 = 0
+\\end{equation}
+
+\\end{document}
+```
+
+## Try It Out!
+Click the buttons on any LaTeX block above to:
+- 📋 **Copy** the LaTeX source code
+- 📤 **Share** as .tex file for LaTeX editors
+- 🔍 **Expand** to see equations in full screen
+
+Perfect for academic papers, technical documentation, and mathematical content!
+              '''),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

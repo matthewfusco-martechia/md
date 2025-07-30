@@ -72,11 +72,12 @@ class InlineCodeStyle {
 
   /// Creates a default inline code style.
   static const InlineCodeStyle defaultStyle = InlineCodeStyle(
-    backgroundColor: Color.fromARGB(255, 235, 235, 235),
-    textColor: Colors.black,
+    backgroundColor: Color(0xFF2D2D2D),  // Dark gray background
+    textColor: Colors.white,             // White text
     fontFamily: 'monospace',
-    borderRadius: BorderRadius.all(Radius.circular(4.0)),
-    padding: EdgeInsets.symmetric(horizontal: 4.0, vertical: 2.0),
+    borderRadius: BorderRadius.all(Radius.circular(6.0)),  // Rounded corners
+    padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),  
+    // More padding
   );
 
   @override
@@ -240,7 +241,8 @@ class MarkdownThemeData implements ThemeExtension<MarkdownThemeData> {
   final HashMap<int, TextStyle> _textStyles;
 
   /// Returns a [TextStyle] for the given [MD$Style].
-  /// For inline code (monospace), uses the custom [inlineCodeStyle] if provided.
+  /// For inline code (monospace), uses the custom [inlineCodeStyle] if 
+  /// provided.
   TextStyle textStyleFor(MD$Style style) => _textStyles.putIfAbsent(
         style.hashCode,
         () {
@@ -263,7 +265,8 @@ class MarkdownThemeData implements ThemeExtension<MarkdownThemeData> {
               var s when s.contains(MD$Style.highlight) => FontWeight.bold,
               _ => null,
             },
-            fontStyle: style.contains(MD$Style.italic) ? FontStyle.italic : null,
+            fontStyle: style.contains(MD$Style.italic) ? 
+                FontStyle.italic : null,
             decoration: switch (style) {
               var s when s.contains(MD$Style.underline) =>
                 TextDecoration.underline,
@@ -271,18 +274,20 @@ class MarkdownThemeData implements ThemeExtension<MarkdownThemeData> {
                 TextDecoration.lineThrough,
               _ => null,
             },
-            fontFamily: style.contains(MD$Style.monospace) ? 'monospace' : null,
+            fontFamily: style.contains(MD$Style.monospace) ? 
+                'monospace' : null,
             color: switch (style) {
               var s when s.contains(MD$Style.link) => Colors.indigo,
               var s when s.contains(MD$Style.highlight) => Colors.black,
-              var s when s.contains(MD$Style.monospace) => Colors.black,
+              var s when s.contains(MD$Style.monospace) => 
+                  Colors.white,  // White text for dark background
               _ => null,
             },
             backgroundColor: switch (style) {
               var s when s.contains(MD$Style.highlight) =>
                 Colors.deepOrange.withOpacity(0.25),
               var s when s.contains(MD$Style.monospace) =>
-                Colors.grey.withOpacity(0.25),
+                const Color(0xFF2D2D2D),  // Dark background to match default
               _ => null,
             },
           );
