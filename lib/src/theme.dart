@@ -280,9 +280,9 @@ class MarkdownThemeData implements ThemeExtension<MarkdownThemeData> {
             },
             backgroundColor: switch (style) {
               var s when s.contains(MD$Style.highlight) =>
-                Colors.deepOrange.withValues(alpha: 0.25),
+                Colors.deepOrange.withOpacity(0.25),
               var s when s.contains(MD$Style.monospace) =>
-                Colors.grey.withValues(alpha: 0.25),
+                Colors.grey.withOpacity(0.25),
               _ => null,
             },
           );

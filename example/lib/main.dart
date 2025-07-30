@@ -102,7 +102,8 @@ class InlineCodeDemoScreen extends StatelessWidget {
             _buildStyledExample(
               title: 'Default Styling',
               style: null, // Use default
-              markdown: 'Here is some `default inline code` with standard styling.',
+              markdown: 'Here is some `default inline code` with standard '
+                  'styling.',
             ),
             const SizedBox(height: 24),
             
@@ -115,7 +116,8 @@ class InlineCodeDemoScreen extends StatelessWidget {
                 borderRadius: BorderRadius.all(Radius.circular(6.0)),
                 padding: EdgeInsets.symmetric(horizontal: 6.0, vertical: 3.0),
               ),
-              markdown: 'Blue styled `console.log("Hello World");` inline code.',
+              markdown: 'Blue styled `console.log("Hello World");` inline '
+                  'code.',
             ),
             const SizedBox(height: 24),
             
@@ -159,7 +161,8 @@ class InlineCodeDemoScreen extends StatelessWidget {
                 fontFamily: 'Courier New',
                 fontSize: 14.0,
               ),
-              markdown: 'Dark theme `git commit -m "Add inline code styling"` with green text.',
+              markdown: 'Dark theme `git commit -m "Add inline code styling"` '
+                  'with green text.',
             ),
             const SizedBox(height: 24),
             
@@ -202,7 +205,10 @@ class InlineCodeDemoScreen extends StatelessWidget {
             const SizedBox(height: 12),
             MarkdownTheme(
               data: MarkdownThemeData(
-                textStyle: const TextStyle(fontSize: 16.0, color: Colors.black87),
+                textStyle: const TextStyle(
+                  fontSize: 16.0, 
+                  color: Colors.black87,
+                ),
                 inlineCodeStyle: style,
                 spanFilter: (span) => !span.style.contains(MD$Style.image),
               ),
