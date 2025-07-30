@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:share_plus/share_plus.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import 'package:flutter_math_fork/flutter_math.dart';
 
 /// A stateful copy button widget for LaTeX content
 class _LatexCopyButton extends StatefulWidget {
@@ -237,7 +238,7 @@ class CustomLatexRenderer extends StatelessWidget {
             height: 1,
             color: const Color(0xFF2A2A2A),
           ),
-          // Content area - styled LaTeX code display
+          // Content area - rendered LaTeX
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -250,15 +251,7 @@ class CustomLatexRenderer extends StatelessWidget {
             ),
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: SelectableText(
-                content,
-                style: TextStyle(
-                  fontFamily: 'JetBrains Mono',
-                  fontSize: style.fontSize ?? 14.0,
-                  color: const Color(0xFFE1E1E1),
-                  height: 1.5,
-                ),
-              ),
+              child: _buildLatexContent(content, style),
             ),
           ),
         ],
@@ -369,14 +362,9 @@ class CustomLatexRenderer extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: const Color(0xFF2A2A2A)),
                       ),
-                      child: SelectableText(
-                        latexData,
-                        style: TextStyle(
-                          fontFamily: 'JetBrains Mono',
-                          fontSize: (style.fontSize ?? 14.0) * 1.1,
-                          color: const Color(0xFFE1E1E1),
-                          height: 1.6,
-                        ),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: _buildLatexContent(latexData, style, isExpanded: true),
                       ),
                     ),
                   ),
@@ -387,5 +375,64 @@ class CustomLatexRenderer extends StatelessWidget {
         );
       },
     );
+  }
+
+  // Build LaTeX content with proper rendering
+  Widget _buildLatexContent(String content, TextStyle style, {bool isExpanded = false}) {
+    try {
+      // Clean the LaTeX content
+      String cleanContent = content.trim();
+      
+      // Remove outer display math delimiters if present
+      if (cleanContent.startsWith(r'\[') && cleanContent.endsWith(r'\]')) {
+        cleanContent = cleanContent.substring(2, cleanContent.length - 2);
+      } else if (cleanContent.startsWith(r'$$') && cleanContent.endsWith(r'$$')) {
+        cleanContent = cleanContent.substring(2, cleanContent.length - 2);
+      }
+      
+      // Try to render the LaTeX
+      return Math.tex(
+        cleanContent,
+        textStyle: TextStyle(
+          color: style.color ?? Colors.white,
+          fontSize: isExpanded ? (style.fontSize ?? 14.0) * 1.2 : (style.fontSize ?? 14.0),
+        ),
+        mathStyle: MathStyle.display,
+      );
+    } catch (e) {
+      // Fallback to displaying raw LaTeX if rendering fails
+      debugPrint('LaTeX rendering failed: $e');
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFF2A2A2A),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFF3A3A3A)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'LaTeX Rendering Error',
+              style: TextStyle(
+                color: Colors.red[300],
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            SelectableText(
+              content,
+              style: TextStyle(
+                fontFamily: 'JetBrains Mono',
+                fontSize: style.fontSize ?? 14.0,
+                color: const Color(0xFFE1E1E1),
+                height: 1.5,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
   }
 } 
