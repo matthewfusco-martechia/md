@@ -383,11 +383,29 @@ class CustomLatexRenderer extends StatelessWidget {
       // Clean the LaTeX content
       String cleanContent = content.trim();
       
-      // Remove outer display math delimiters if present
-      if (cleanContent.startsWith(r'\[') && cleanContent.endsWith(r'\]')) {
-        cleanContent = cleanContent.substring(2, cleanContent.length - 2);
-      } else if (cleanContent.startsWith(r'$$') && cleanContent.endsWith(r'$$')) {
-        cleanContent = cleanContent.substring(2, cleanContent.length - 2);
+      // Remove various LaTeX display math delimiters
+      // Handle \[ ... \] delimiters
+      if (cleanContent.startsWith('\\[') && cleanContent.endsWith('\\]')) {
+        cleanContent = cleanContent.substring(2, cleanContent.length - 2).trim();
+      }
+      // Handle $$ ... $$ delimiters
+      else if (cleanContent.startsWith('\$\$') && cleanContent.endsWith('\$\$')) {
+        cleanContent = cleanContent.substring(2, cleanContent.length - 2).trim();
+      }
+      // Handle single $ ... $ delimiters (inline math)
+      else if (cleanContent.startsWith('\$') && cleanContent.endsWith('\$') && cleanContent.length > 2) {
+        cleanContent = cleanContent.substring(1, cleanContent.length - 1).trim();
+      }
+      
+      // Also remove any remaining \[ or \] that might be in the content
+      cleanContent = cleanContent.replaceAll('\\[', '').replaceAll('\\]', '');
+      
+      // Remove any leading/trailing whitespace again
+      cleanContent = cleanContent.trim();
+      
+      // Skip if content is empty after cleaning
+      if (cleanContent.isEmpty) {
+        return const Text('Empty LaTeX content', style: TextStyle(color: Colors.grey));
       }
       
       // Try to render the LaTeX
@@ -418,6 +436,14 @@ class CustomLatexRenderer extends StatelessWidget {
                 color: Colors.red[300],
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Error: $e',
+              style: TextStyle(
+                color: Colors.red[400],
+                fontSize: 10,
               ),
             ),
             const SizedBox(height: 8),
